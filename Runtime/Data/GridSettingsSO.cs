@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Shoelace.GridSystem.Data
+namespace ShoelaceStudios.GridSystem
 {
     [CreateAssetMenu(fileName = "New GridSettings", menuName = "GridSystem/GridSettings")]
     public class GridSettingsSO : ScriptableObject

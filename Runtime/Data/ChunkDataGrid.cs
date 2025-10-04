@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Shoelace.GridSystem.Data
+namespace ShoelaceStudios.GridSystem
 {
 	public class ChunkDataGrid<T> where T : IChunkData
 	{

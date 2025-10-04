@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace Shoelace.GridSystem.Data
+namespace ShoelaceStudios.GridSystem
 {
 	public class GridChunk<T> where T : IChunkData
 	{

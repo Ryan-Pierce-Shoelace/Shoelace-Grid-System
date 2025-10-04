@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Shoelace.GridSystem.Data
+namespace ShoelaceStudios.GridSystem
 {
 	public abstract class GameGrid : MonoBehaviour
 	{

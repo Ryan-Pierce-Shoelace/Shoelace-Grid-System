@@ -1,4 +1,4 @@
-namespace Shoelace.GridSystem.Data
+namespace ShoelaceStudios.GridSystem
 {
     [System.Serializable]
     public class DataGrid<T>

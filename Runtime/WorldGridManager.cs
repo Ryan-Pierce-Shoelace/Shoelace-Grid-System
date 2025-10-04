@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
-using Shoelace.GridSystem.Data;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 using UnityUtils;
+// ReSharper disable All
 
-namespace Shoelace.GridSystem
+namespace ShoelaceStudios.GridSystem
 {
 	public class WorldGridManager : Singleton<WorldGridManager>
 	{

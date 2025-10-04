@@ -1,4 +1,4 @@
-﻿namespace Shoelace.GridSystem.Data
+﻿namespace ShoelaceStudios.GridSystem
 {
     public class ChunkRuntimeState
     {
