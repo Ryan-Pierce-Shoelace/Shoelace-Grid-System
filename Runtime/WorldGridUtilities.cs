@@ -58,6 +58,22 @@ namespace ShoelaceStudios.GridSystem
                 }
             }
 
+            if (overlappingCells.Count == 0)
+            {
+                //Find fallback cell (single cell that the object mostly covers
+                Vector3 center = collider.bounds.center;
+                Vector2Int fallbackCell = grid.GetCell(center);
+                if (grid.IsValidCell(fallbackCell))
+                {
+                    overlappingCells.Add(fallbackCell);
+                }
+                else
+                {
+                    Debug.LogWarning("Could not find overlapping cell: " + fallbackCell);
+                }
+            }
+            
+
             return overlappingCells;
         }
 
