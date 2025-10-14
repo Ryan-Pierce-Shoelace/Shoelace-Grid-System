@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
+using ShoelaceStudios.Utilities.Singleton;
 using UnityEngine;
 using UnityEngine.Tilemaps;
-using UnityUtils;
 
 // ReSharper disable All
 
