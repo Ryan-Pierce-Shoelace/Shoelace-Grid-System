@@ -140,7 +140,10 @@ namespace ShoelaceStudios.GridSystem
             cellPosition.z = 0;
             return IsValidCell(cellPosition.x, cellPosition.y) ? (Vector2Int)cellPosition : default;
         }
-
+        public List<Vector2Int> GetOverlappingCells(Collider2D collider, float overlapThreshold = 0f)
+        {
+            return WorldGridUtilities.GetOverlappingCells(this, collider, overlapThreshold);
+        }
         public bool IsValidCell(Vector2Int coord)
         {
             return IsValidCell(coord.x, coord.y);
