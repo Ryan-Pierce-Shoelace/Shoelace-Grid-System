@@ -145,33 +145,33 @@ namespace ShoelaceStudios.GridSystem
         {
             return WorldGridUtilities.GetOverlappingCells(this, collider, overlapThreshold);
         }
-        public List<Vector2Int> GetCellsInRadius(IEnumerable<Vector2Int> originCells, int radius, bool radialClipping = true)
+        public List<Vector2Int> GetCellsInRadius(IEnumerable<Vector2Int> originCells, bool stopAtWalls, int radius, bool radialClipping = true)
         {
-            HashSet<Vector2Int> explosionCells = new HashSet<Vector2Int>();
-            
-            // Expand from each overlapping cell
+            HashSet<Vector2Int> radiusCells = new HashSet<Vector2Int>();
+
             foreach (var origin in originCells)
             {
-                for (int dx = -radius; dx <= radius; dx++)
+                foreach (var candidate in WorldGridUtilities.GetCandidateCells(origin, radius))
                 {
-                    for (int dy = -radius; dy <= radius; dy++)
-                    {
-                        Vector2Int candidate = new Vector2Int(origin.x + dx, origin.y + dy);
+                    if (!IsValidCell(candidate)) 
+                        continue;
 
-                        if (radialClipping && Vector2Int.Distance(origin, candidate) >= radius)
-                        { 
-                            continue;
-                        }
-                        if (IsValidCell(candidate))
-                        {
-                            explosionCells.Add(candidate);
-                        }
+                    if (!WorldGridUtilities.IsWithinRadius(origin, candidate, radius, radialClipping))
+                        continue;
+
+                    if (stopAtWalls && candidate != origin &&
+                        WorldGridUtilities.IsBlockedByWalls(origin, candidate, IsWallCell))
+                    {
+                        continue;
                     }
+
+                    radiusCells.Add(candidate);
                 }
             }
 
-            return new List<Vector2Int>(explosionCells);
+            return new List<Vector2Int>(radiusCells);
         }
+
         public bool IsValidCell(Vector2Int coord)
         {
             return IsValidCell(coord.x, coord.y);
