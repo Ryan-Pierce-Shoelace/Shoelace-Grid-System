@@ -118,6 +118,7 @@ namespace ShoelaceStudios.GridSystem
                 }
             }
         }
+        
 
         private bool IsBorderTile(int x, int y)
         {
@@ -143,6 +144,33 @@ namespace ShoelaceStudios.GridSystem
         public List<Vector2Int> GetOverlappingCells(Collider2D collider, float overlapThreshold = 0f)
         {
             return WorldGridUtilities.GetOverlappingCells(this, collider, overlapThreshold);
+        }
+        public List<Vector2Int> GetCellsInRadius(IEnumerable<Vector2Int> originCells, int radius, bool radialClipping = true)
+        {
+            HashSet<Vector2Int> explosionCells = new HashSet<Vector2Int>();
+            
+            // Expand from each overlapping cell
+            foreach (var origin in originCells)
+            {
+                for (int dx = -radius; dx <= radius; dx++)
+                {
+                    for (int dy = -radius; dy <= radius; dy++)
+                    {
+                        Vector2Int candidate = new Vector2Int(origin.x + dx, origin.y + dy);
+
+                        if (radialClipping && Vector2Int.Distance(origin, candidate) >= radius)
+                        { 
+                            continue;
+                        }
+                        if (IsValidCell(candidate))
+                        {
+                            explosionCells.Add(candidate);
+                        }
+                    }
+                }
+            }
+
+            return new List<Vector2Int>(explosionCells);
         }
         public bool IsValidCell(Vector2Int coord)
         {

@@ -6,6 +6,7 @@ namespace ShoelaceStudios.GridSystem
     public static class WorldGridUtilities
     {
         #region Polygon Overlapping Cells
+
         // Main method to get a list of grid cells that a given 2D collider overlaps.
         // overlapThreshold determines how much of the cell must be covered to count as overlapping.
         public static List<Vector2Int> GetOverlappingCells(this WorldGridManager grid, Collider2D collider,
@@ -72,7 +73,7 @@ namespace ShoelaceStudios.GridSystem
                     Debug.LogWarning("Could not find overlapping cell: " + fallbackCell);
                 }
             }
-            
+
 
             return overlappingCells;
         }
@@ -135,9 +136,9 @@ namespace ShoelaceStudios.GridSystem
             return new[]
             {
                 (Vector2)(center + new Vector3(-s, -s)), // bottom-left
-                (Vector2)(center + new Vector3(s, -s)),  // bottom-right
-                (Vector2)(center + new Vector3(s, s)),   // top-right
-                (Vector2)(center + new Vector3(-s, s))   // top-left
+                (Vector2)(center + new Vector3(s, -s)), // bottom-right
+                (Vector2)(center + new Vector3(s, s)), // top-right
+                (Vector2)(center + new Vector3(-s, s)) // top-left
             };
         }
 
@@ -152,6 +153,7 @@ namespace ShoelaceStudios.GridSystem
                 Vector2 local = new Vector2(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r);
                 points[i] = circle.transform.TransformPoint(local + circle.offset);
             }
+
             return points;
         }
 
@@ -182,7 +184,8 @@ namespace ShoelaceStudios.GridSystem
         }
 
         // Compute how much of a cell polygon is covered by the collider polygon
-        private static float ComputePolygonOverlapRatio(Vector2[] colliderPoly, Vector2[] cellPoly, int sampleResolution = 3)
+        private static float ComputePolygonOverlapRatio(Vector2[] colliderPoly, Vector2[] cellPoly,
+            int sampleResolution = 3)
         {
             int insideCount = 0;
             int totalSamples = sampleResolution * sampleResolution;
@@ -223,8 +226,10 @@ namespace ShoelaceStudios.GridSystem
                     (point.x < (poly[j].x - poly[i].x) * (point.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x))
                     inside = !inside; // toggle the inside flag
             }
+
             return inside; // true if inside, false if outside
         }
+
         #endregion
     }
 }
