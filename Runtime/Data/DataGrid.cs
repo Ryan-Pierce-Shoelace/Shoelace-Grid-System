@@ -1,3 +1,5 @@
+using System;
+
 namespace ShoelaceStudios.GridSystem
 {
     [System.Serializable]
@@ -27,9 +29,17 @@ namespace ShoelaceStudios.GridSystem
 
         public void SetValue(int x, int y, T value)
         {
-            if(!IsValid(x, y)) { return; }
+            if (!IsValid(x, y))
+            {
+                return;
+            }
 
             gridData[x, y] = value;
+        }
+
+        public void Clear()
+        {
+            Array.Clear(gridData, 0, gridData.Length);
         }
 
         private bool IsValid(int x, int y)
