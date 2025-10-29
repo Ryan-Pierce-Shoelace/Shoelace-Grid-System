@@ -293,7 +293,7 @@ namespace ShoelaceStudios.GridSystem
         /// <returns>A HashSet of all reached cells including the start cell.</returns>
         public HashSet<Vector2Int> FloodFillInRegion(
             Vector2Int start,
-            HashSet<Vector2Int> allowedRegion,
+            List<Vector2Int> allowedRegion,
             int steps = 0,
             float radius = 0f,
             bool stopAtWalls = false)
