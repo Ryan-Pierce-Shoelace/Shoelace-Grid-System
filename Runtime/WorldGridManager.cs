@@ -15,7 +15,7 @@ namespace ShoelaceStudios.GridSystem
 
         [SerializeField] private Grid grid;
         [SerializeField] private TileBase wallTile;
-        
+
         [Header("Grid Settings")] [SerializeField]
         private int gridWidth;
 
@@ -118,7 +118,7 @@ namespace ShoelaceStudios.GridSystem
                 }
             }
         }
-        
+
 
         private bool IsBorderTile(int x, int y)
         {
@@ -141,11 +141,14 @@ namespace ShoelaceStudios.GridSystem
             cellPosition.z = 0;
             return IsValidCell(cellPosition.x, cellPosition.y) ? (Vector2Int)cellPosition : default;
         }
+
         public List<Vector2Int> GetOverlappingCells(Collider2D collider, float overlapThreshold = 0f)
         {
             return WorldGridUtilities.GetOverlappingCells(this, collider, overlapThreshold);
         }
-        public List<Vector2Int> GetCellsInRadius(IEnumerable<Vector2Int> originCells, bool stopAtWalls, int radius, bool radialClipping = true)
+
+        public List<Vector2Int> GetCellsInRadius(IEnumerable<Vector2Int> originCells, bool stopAtWalls, int radius,
+            bool radialClipping = true)
         {
             HashSet<Vector2Int> radiusCells = new HashSet<Vector2Int>();
 
@@ -153,7 +156,7 @@ namespace ShoelaceStudios.GridSystem
             {
                 foreach (var candidate in WorldGridUtilities.GetCandidateCells(origin, radius))
                 {
-                    if (!IsValidCell(candidate)) 
+                    if (!IsValidCell(candidate))
                         continue;
 
                     if (!WorldGridUtilities.IsWithinRadius(origin, candidate, radius, radialClipping))
@@ -221,6 +224,7 @@ namespace ShoelaceStudios.GridSystem
             height = (gridHeight) * CellSize;
         }
 
+
         /// <summary>
         /// Flood fills from a start cell up to a given number of steps (or radius in world units).
         /// Stops expansion at walls if stopAtWalls = true.
@@ -230,7 +234,8 @@ namespace ShoelaceStudios.GridSystem
         /// <param name="radius">Optional world-space radius to expand. Overrides steps if > 0.</param>
         /// <param name="stopAtWalls">Whether to block propagation through wall cells.</param>
         /// <returns>A HashSet of all reached cells including the start cell.</returns>
-        public HashSet<Vector2Int> FloodFill(Vector2Int start, int steps = 0, float radius = 0f, bool stopAtWalls = true)
+        public HashSet<Vector2Int> FloodFill(Vector2Int start, int steps = 0, float radius = 0f,
+            bool stopAtWalls = true)
         {
             HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
             Queue<(Vector2Int cell, int depth)> frontier = new Queue<(Vector2Int, int)>();
@@ -263,6 +268,69 @@ namespace ShoelaceStudios.GridSystem
                     Vector2Int next = current + offset;
 
                     if (!IsValidCell(next) || visited.Contains(next))
+                        continue;
+
+                    if (stopAtWalls && IsWallCell(next))
+                        continue;
+
+                    visited.Add(next);
+                    frontier.Enqueue((next, depth + 1));
+                }
+            }
+
+            return visited;
+        }
+
+        /// <summary>
+        /// Flood fills from a start cell up to a given number of steps (or radius),
+        /// but only propagates into allowed region cells.
+        /// </summary>
+        /// <param name="start">Origin cell.</param>
+        /// <param name="allowedRegion">Cells that the flood fill is allowed to enter.</param>
+        /// <param name="steps">Number of grid steps to expand.</param>
+        /// <param name="radius">Optional world-space radius. Overrides steps if > 0.</param>
+        /// <param name="stopAtWalls">Whether to block propagation through walls.</param>
+        /// <returns>A HashSet of all reached cells including the start cell.</returns>
+        public HashSet<Vector2Int> FloodFillInRegion(
+            Vector2Int start,
+            HashSet<Vector2Int> allowedRegion,
+            int steps = 0,
+            float radius = 0f,
+            bool stopAtWalls = false)
+        {
+            HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+            Queue<(Vector2Int cell, int depth)> frontier = new Queue<(Vector2Int, int)>();
+
+            if (!allowedRegion.Contains(start))
+                return visited; // start is not in the allowed region
+
+            frontier.Enqueue((start, 0));
+            visited.Add(start);
+
+            float radiusSqr = radius > 0f ? radius * radius : float.MaxValue;
+            Vector3 originWorld = CellToWorldSpace(start);
+
+            while (frontier.Count > 0)
+            {
+                var (current, depth) = frontier.Dequeue();
+
+                // Limit by steps
+                if (steps > 0 && depth >= steps)
+                    continue;
+
+                Vector3 worldPos = CellToWorldSpace(current);
+                if (radius > 0f && (worldPos - originWorld).sqrMagnitude > radiusSqr)
+                    continue;
+
+                // Expand to 4 neighbors
+                foreach (Vector2Int offset in WorldGridUtilities.FourDirections)
+                {
+                    Vector2Int next = current + offset;
+
+                    if (!IsValidCell(next) || visited.Contains(next))
+                        continue;
+
+                    if (!allowedRegion.Contains(next))
                         continue;
 
                     if (stopAtWalls && IsWallCell(next))
