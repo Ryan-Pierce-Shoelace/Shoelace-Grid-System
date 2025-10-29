@@ -5,6 +5,26 @@ namespace ShoelaceStudios.GridSystem
 {
     public static class WorldGridUtilities
     {
+        public static readonly Vector2Int[] FourDirections = new Vector2Int[]
+        {
+            new Vector2Int(1, 0),   // East
+            new Vector2Int(-1, 0),  // West
+            new Vector2Int(0, 1),   // North
+            new Vector2Int(0, -1)   // South
+        };
+
+        public static readonly Vector2Int[] EightDirections = new Vector2Int[]
+        {
+            new Vector2Int(1, 0),   // East
+            new Vector2Int(-1, 0),  // West
+            new Vector2Int(0, 1),   // North
+            new Vector2Int(0, -1),  // South
+            new Vector2Int(1, 1),   // NE
+            new Vector2Int(-1, 1),  // NW
+            new Vector2Int(1, -1),  // SE
+            new Vector2Int(-1, -1), // SW
+        };
+        
         /// <summary>
         /// Check if a candidate cell is within a circular radius of an origin
         /// </summary>

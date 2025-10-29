@@ -221,6 +221,61 @@ namespace ShoelaceStudios.GridSystem
             height = (gridHeight) * CellSize;
         }
 
+        /// <summary>
+        /// Flood fills from a start cell up to a given number of steps (or radius in world units).
+        /// Stops expansion at walls if stopAtWalls = true.
+        /// </summary>
+        /// <param name="start">The origin cell to flood from.</param>
+        /// <param name="steps">Number of grid steps to expand. Ignored if radius > 0.</param>
+        /// <param name="radius">Optional world-space radius to expand. Overrides steps if > 0.</param>
+        /// <param name="stopAtWalls">Whether to block propagation through wall cells.</param>
+        /// <returns>A HashSet of all reached cells including the start cell.</returns>
+        public HashSet<Vector2Int> FloodFill(Vector2Int start, int steps = 0, float radius = 0f, bool stopAtWalls = true)
+        {
+            HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+            Queue<(Vector2Int cell, int depth)> frontier = new Queue<(Vector2Int, int)>();
+
+            frontier.Enqueue((start, 0));
+            visited.Add(start);
+
+            float radiusSqr = radius > 0 ? radius * radius : float.MaxValue;
+            float cellSize = CellSize;
+
+            while (frontier.Count > 0)
+            {
+                var (current, depth) = frontier.Dequeue();
+
+                // Limit by steps
+                if (steps > 0 && depth >= steps)
+                    continue;
+
+                Vector3 worldPos = CellToWorldSpace(current);
+                if (radius > 0f)
+                {
+                    Vector3 originWorld = CellToWorldSpace(start);
+                    if ((worldPos - originWorld).sqrMagnitude > radiusSqr)
+                        continue;
+                }
+
+                // Expand to 4 neighbors (N, S, E, W)
+                foreach (Vector2Int offset in WorldGridUtilities.FourDirections)
+                {
+                    Vector2Int next = current + offset;
+
+                    if (!IsValidCell(next) || visited.Contains(next))
+                        continue;
+
+                    if (stopAtWalls && IsWallCell(next))
+                        continue;
+
+                    visited.Add(next);
+                    frontier.Enqueue((next, depth + 1));
+                }
+            }
+
+            return visited;
+        }
+
         #endregion
     }
 }
