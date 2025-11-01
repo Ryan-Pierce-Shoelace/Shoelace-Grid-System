@@ -2,7 +2,7 @@ using System;
 
 namespace ShoelaceStudios.GridSystem
 {
-    [System.Serializable]
+    [Serializable]
     public class DataGrid<T>
     {
         private readonly T[,] gridData;

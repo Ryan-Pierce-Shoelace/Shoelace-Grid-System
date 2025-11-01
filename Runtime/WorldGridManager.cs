@@ -4,21 +4,19 @@ using ShoelaceStudios.Utilities.Singleton;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-// ReSharper disable All
+
 
 namespace ShoelaceStudios.GridSystem
 {
     public class WorldGridManager : Singleton<WorldGridManager>
     {
-        [Header("Tilemap Refs")] [SerializeField]
-        private Tilemap wallTileMap;
-
+        [Header("Tilemap Refs")] 
+        [SerializeField] private Tilemap wallTileMap;
         [SerializeField] private Grid grid;
         [SerializeField] private TileBase wallTile;
 
-        [Header("Grid Settings")] [SerializeField]
-        private int gridWidth;
-
+        [Header("Grid Settings")]
+        [SerializeField] private int gridWidth;
         [SerializeField] private int gridHeight;
         [SerializeField] private bool buildPerimeterWall;
         [SerializeField] private GridSettingsSO settings;
@@ -142,9 +140,9 @@ namespace ShoelaceStudios.GridSystem
             return IsValidCell(cellPosition.x, cellPosition.y) ? (Vector2Int)cellPosition : default;
         }
 
-        public List<Vector2Int> GetOverlappingCells(Collider2D collider, float overlapThreshold = 0f)
+        public List<Vector2Int> GetOverlappingCells(Collider2D col, float overlapThreshold = 0f)
         {
-            return WorldGridUtilities.GetOverlappingCells(this, collider, overlapThreshold);
+            return WorldGridUtilities.GetOverlappingCells(this, col, overlapThreshold);
         }
 
         public List<Vector2Int> GetCellsInRadius(IEnumerable<Vector2Int> originCells, bool stopAtWalls, int radius,
@@ -152,9 +150,9 @@ namespace ShoelaceStudios.GridSystem
         {
             HashSet<Vector2Int> radiusCells = new HashSet<Vector2Int>();
 
-            foreach (var origin in originCells)
+            foreach (Vector2Int origin in originCells)
             {
-                foreach (var candidate in WorldGridUtilities.GetCandidateCells(origin, radius))
+                foreach (Vector2Int candidate in WorldGridUtilities.GetCandidateCells(origin, radius))
                 {
                     if (!IsValidCell(candidate))
                         continue;
@@ -248,7 +246,7 @@ namespace ShoelaceStudios.GridSystem
 
             while (frontier.Count > 0)
             {
-                var (current, depth) = frontier.Dequeue();
+                (Vector2Int current, int depth) = frontier.Dequeue();
 
                 // Limit by steps
                 if (steps > 0 && depth >= steps)
@@ -312,7 +310,7 @@ namespace ShoelaceStudios.GridSystem
 
             while (frontier.Count > 0)
             {
-                var (current, depth) = frontier.Dequeue();
+                (Vector2Int current, int depth) = frontier.Dequeue();
 
                 // Limit by steps
                 if (steps > 0 && depth >= steps)

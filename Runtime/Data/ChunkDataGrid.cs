@@ -27,18 +27,6 @@ namespace ShoelaceStudios.GridSystem
 
 			chunks = new Dictionary<Vector2Int, GridChunk<T>>();
 			runtimeStates = new Dictionary<Vector2Int, ChunkRuntimeState>();
-
-			int chunksX = Mathf.CeilToInt(width / chunkSize);
-			int chunksY = Mathf.CeilToInt(height / chunkSize);
-
-			for (int x = 0; x < chunksX; x++)
-			{
-				for (int y = 0; y < chunksY; y++)
-				{
-					Vector2Int coord = new(x, y);
-					chunks[coord] = new GridChunk<T>(coord, chunkSize, cellSize, worldOrigin);
-				}
-			}
 		}
 
 		#endregion
@@ -143,11 +131,10 @@ namespace ShoelaceStudios.GridSystem
 
 		public ChunkRuntimeState GetRuntimeState(Vector2Int chunkCoord)
 		{
-			if (!runtimeStates.TryGetValue(chunkCoord, out ChunkRuntimeState state))
-			{
-				state = new ChunkRuntimeState();
-				runtimeStates[chunkCoord] = state;
-			}
+			if (runtimeStates.TryGetValue(chunkCoord, out ChunkRuntimeState state)) return state;
+
+			state = new ChunkRuntimeState();
+			runtimeStates[chunkCoord] = state;
 
 			return state;
 		}
