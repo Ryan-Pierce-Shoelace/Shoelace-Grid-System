@@ -5,6 +5,8 @@ namespace ShoelaceStudios.GridSystem
 {
     public static class WorldGridUtilities
     {
+        private const int CAPSULE2D_RESOLUTION = 8;
+        
         public static readonly Vector2Int[] FourDirections = new Vector2Int[]
         {
             new Vector2Int(1, 0),   // East
