@@ -1,327 +1,449 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace ShoelaceStudios.GridSystem
 {
-    public static class WorldGridUtilities
-    {
-        private const int CAPSULE2D_RESOLUTION = 8;
-        
-        public static readonly Vector2Int[] FourDirections = new Vector2Int[]
-        {
-            new Vector2Int(1, 0),   // East
-            new Vector2Int(-1, 0),  // West
-            new Vector2Int(0, 1),   // North
-            new Vector2Int(0, -1)   // South
-        };
+	public static class WorldGridUtilities
+	{
+		#region Consts
 
-        public static readonly Vector2Int[] EightDirections = new Vector2Int[]
-        {
-            new Vector2Int(1, 0),   // East
-            new Vector2Int(-1, 0),  // West
-            new Vector2Int(0, 1),   // North
-            new Vector2Int(0, -1),  // South
-            new Vector2Int(1, 1),   // NE
-            new Vector2Int(-1, 1),  // NW
-            new Vector2Int(1, -1),  // SE
-            new Vector2Int(-1, -1), // SW
-        };
-        
-        /// <summary>
-        /// Check if a candidate cell is within a circular radius of an origin
-        /// </summary>
-        public static bool IsWithinRadius(Vector2Int origin, Vector2Int candidate, int radius, bool radialClipping = true)
-        {
-            if (!radialClipping) return true;
-            int dx = candidate.x - origin.x;
-            int dy = candidate.y - origin.y;
-            return dx * dx + dy * dy <= radius * radius;
-        }
+		private const int MIN_POLYGON_POINTS = 3;
+		private const int DEFAULT_OVERLAP_SAMPLE_RESOLUTION = 3;
+		private const int CIRCLE_APPROXIMATION_SEGMENTS = 12;
+		private const int CAPSULE_APPROXIMATION_SEGMENTS = 8;
+		private const int CELL_CORNER_COUNT = 4;
 
-        /// <summary>
-        /// Check if the path from origin to candidate is blocked by walls
-        /// </summary>
-        public static bool IsBlockedByWalls(Vector2Int origin, Vector2Int candidate, System.Func<Vector2Int, bool> isWallCell)
-        {
-            foreach (var cellOnLine in GetCellsOnLine(origin, candidate))
-            {
-                if (isWallCell(cellOnLine))
-                    return true;
-            }
-            return false;
-        }
+		public static readonly Vector2Int[] FourDirections = new[]
+		{
+			new Vector2Int(1, 0), // East
+			new Vector2Int(-1, 0), // West
+			new Vector2Int(0, 1), // North
+			new Vector2Int(0, -1) // South
+		};
 
-        /// <summary>
-        /// Return all cells in a square radius from an origin
-        /// </summary>
-        public static IEnumerable<Vector2Int> GetCandidateCells(Vector2Int origin, int radius)
-        {
-            for (int dx = -radius; dx <= radius; dx++)
-            {
-                for (int dy = -radius; dy <= radius; dy++)
-                {
-                    yield return new Vector2Int(origin.x + dx, origin.y + dy);
-                }
-            }
-        }
-        
-        /// <summary>
-        /// Bresenham's line algorithm: returns all cells between start and end inclusive
-        /// </summary>
-        public static IEnumerable<Vector2Int> GetCellsOnLine(Vector2Int start, Vector2Int end)
-        {
-            int x0 = start.x, y0 = start.y;
-            int x1 = end.x, y1 = end.y;
+		public static readonly Vector2Int[] EightDirections = new[]
+		{
+			new Vector2Int(1, 0), // East
+			new Vector2Int(-1, 0), // West
+			new Vector2Int(0, 1), // North
+			new Vector2Int(0, -1), // South
+			new Vector2Int(1, 1), // NE
+			new Vector2Int(-1, 1), // NW
+			new Vector2Int(1, -1), // SE
+			new Vector2Int(-1, -1), // SW
+		};
 
-            int dx = Mathf.Abs(x1 - x0);
-            int dy = Mathf.Abs(y1 - y0);
-            int sx = x0 < x1 ? 1 : -1;
-            int sy = y0 < y1 ? 1 : -1;
-            int err = dx - dy;
-
-            while (true)
-            {
-                yield return new Vector2Int(x0, y0);
-                if (x0 == x1 && y0 == y1) break;
-                int e2 = 2 * err;
-                if (e2 > -dy)
-                {
-                    err -= dy;
-                    x0 += sx;
-                }
-                if (e2 < dx)
-                {
-                    err += dx;
-                    y0 += sy;
-                }
-            }
-        }
-        
-        #region Polygon Overlapping Cells
-
-        // Main method to get a list of grid cells that a given 2D collider overlaps.
-        // overlapThreshold determines how much of the cell must be covered to count as overlapping.
-        public static List<Vector2Int> GetOverlappingCells(this WorldGridManager grid, Collider2D collider,
-            float overlapThreshold)
-        {
-            List<Vector2Int> overlappingCells = new List<Vector2Int>();
-
-            // If no collider is provided, return an empty list
-            if (!collider)
-            {
-                return overlappingCells;
-            }
-
-            // Convert the collider into an array of world-space points (corners or approximated shape)
-            var points = GetColliderWorldPoints(collider);
-
-            // If the collider points are not valid, return empty
-            if (points == null || points.Length < 3)
-                return overlappingCells;
-
-            // Get the bounding box of the collider in world space
-            Bounds bounds = collider.bounds;
-            Vector3 min = bounds.min;
-            Vector3 max = bounds.max;
-
-            // Convert the bounding box into grid coordinates
-            int minX = Mathf.FloorToInt(min.x / grid.CellSize);
-            int maxX = Mathf.CeilToInt(max.x / grid.CellSize);
-            int minY = Mathf.FloorToInt(min.y / grid.CellSize);
-            int maxY = Mathf.CeilToInt(max.y / grid.CellSize);
-
-            // Loop over all grid cells inside the bounding box
-            for (int x = minX; x <= maxX; x++)
-            {
-                for (int y = minY; y <= maxY; y++)
-                {
-                    // Skip invalid cells (outside the grid)
-                    if (!grid.IsValidCell(x, y))
-                        continue;
-
-                    // Get the square polygon representing this grid cell in world space
-                    var cellPoly = GetCellPolygon(grid, x, y);
-
-                    // Calculate what fraction of the cell is overlapped by the collider
-                    float overlapRatio = ComputePolygonOverlapRatio(points, cellPoly);
-
-                    // Only add the cell if the overlap is above the threshold
-                    if (overlapRatio >= overlapThreshold)
-                        overlappingCells.Add(new Vector2Int(x, y));
-                }
-            }
-
-            if (overlappingCells.Count == 0)
-            {
-                //Find fallback cell (single cell that the object mostly covers
-                Vector3 center = collider.bounds.center;
-                Vector2Int fallbackCell = grid.GetCell(center);
-                if (grid.IsValidCell(fallbackCell))
-                {
-                    overlappingCells.Add(fallbackCell);
-                }
-                else
-                {
-                    Debug.LogWarning("Could not find overlapping cell: " + fallbackCell);
-                }
-            }
+		#endregion
 
 
-            return overlappingCells;
-        }
+		#region Public API - Spatial Queries
 
-        // Converts a collider into an array of points in world space
-        private static Vector2[] GetColliderWorldPoints(Collider2D collider)
-        {
-            switch (collider)
-            {
-                case PolygonCollider2D polygon:
-                    // For polygon colliders, transform each point to world space
-                    var points = polygon.points;
-                    var worldPoints = new Vector2[points.Length];
-                    for (int i = 0; i < points.Length; i++)
-                    {
-                        worldPoints[i] = collider.transform.TransformPoint(points[i]);
-                    }
+		/// <summary>
+		/// Check if a cell is within circular radius of an origin using Euclidean distance
+		/// </summary>
+		public static bool IsWithinCircularRadius(Vector2Int origin, Vector2Int candidate, int radius)
+		{
+			int dx = candidate.x - origin.x;
+			int dy = candidate.y - origin.y;
+			return dx * dx + dy * dy <= radius * radius;
+		}
 
-                    return worldPoints;
+		/// <summary>
+		/// Check if a cell is within square/Manhattan radius of an origin
+		/// </summary>
+		public static bool IsWithinSquareRadius(Vector2Int origin, Vector2Int candidate, int radius)
+		{
+			int dx = Mathf.Abs(candidate.x - origin.x);
+			int dy = Mathf.Abs(candidate.y - origin.y);
+			return dx <= radius && dy <= radius;
+		}
 
-                case BoxCollider2D box:
-                    // For box colliders, get the 4 corners
-                    Vector2 size = box.size * .5f; // half-size for offsets
-                    Vector2[] corners =
-                    {
-                        new Vector2(-size.x, -size.y),
-                        new Vector2(-size.x, size.y),
-                        new Vector2(size.x, size.y),
-                        new Vector2(size.x, -size.y),
-                    };
+		/// <summary>
+		/// Check if a cell is within Manhattan distance of an origin
+		/// </summary>
+		public static bool IsWithinManhattanDistance(Vector2Int origin, Vector2Int candidate, int distance)
+		{
+			int dx = Mathf.Abs(candidate.x - origin.x);
+			int dy = Mathf.Abs(candidate.y - origin.y);
+			return dx + dy <= distance;
+		}
 
-                    // Transform corners to world space
-                    for (var i = 0; i < corners.Length; i++)
-                    {
-                        corners[i] = collider.transform.TransformPoint(corners[i]);
-                    }
+		/// <summary>
+		/// Check if the path from origin to candidate is blocked by walls using line-of-sight
+		/// </summary>
+		public static bool HasLineOfSight(Vector2Int from, Vector2Int to, System.Func<Vector2Int, bool> isWallCell)
+		{
+			return GetCellsOnLine(from, to).All(cellOnLine => !isWallCell(cellOnLine));
+		}
 
-                    return corners;
+		public static bool IsBlockedByWalls(Vector2Int origin, Vector2Int target, System.Func<Vector2Int, bool> isWallCell)
+		{
+			return !HasLineOfSight(origin, target, isWallCell);
+		}
 
-                case CapsuleCollider2D capsule:
-                    // Approximate a capsule as a series of points
-                    return ApproximateCapsule(capsule, 8);
 
-                case CircleCollider2D circle:
-                    // Approximate a circle as a series of points
-                    return ApproximateCircle(circle, 12);
+		/// <summary>
+		/// Return all cells in a square area around an origin.
+		/// Use with IsWithinRadius() to filter to circular area.
+		/// </summary>
+		public static IEnumerable<Vector2Int> GetCellsInSquareArea(Vector2Int origin, int radius)
+		{
+			for (int dx = -radius; dx <= radius; dx++)
+			{
+				for (int dy = -radius; dy <= radius; dy++)
+				{
+					yield return new Vector2Int(origin.x + dx, origin.y + dy);
+				}
+			}
+		}
 
-                default:
-                    // Collider type not supported
-                    Debug.LogWarning($"Unsupported collider type: {collider.GetType().Name}");
-                    return null;
-            }
-        }
+		/// <summary>
+		/// Bresenham's line algorithm: returns all cells between start and end inclusive
+		/// </summary>
+		public static IEnumerable<Vector2Int> GetCellsOnLine(Vector2Int start, Vector2Int end)
+		{
+			int x = start.x;
+			int y = start.y;
+			int endX = end.x;
+			int endY = end.y;
 
-        // Returns the 4 corners of a grid cell in world space
-        private static Vector2[] GetCellPolygon(WorldGridManager grid, int x, int y)
-        {
-            float s = grid.CellSize * .5f; // half the size to calculate corners
-            Vector3 center = grid.CellToWorldSpace(x, y);
-            return new[]
-            {
-                (Vector2)(center + new Vector3(-s, -s)), // bottom-left
-                (Vector2)(center + new Vector3(s, -s)), // bottom-right
-                (Vector2)(center + new Vector3(s, s)), // top-right
-                (Vector2)(center + new Vector3(-s, s)) // top-left
-            };
-        }
+			int dx = Mathf.Abs(endX - x);
+			int dy = Mathf.Abs(endY - y);
+			int stepX = x < endX ? 1 : -1;
+			int stepY = y < endY ? 1 : -1;
+			int error = dx - dy;
 
-        // Approximate a circle as a series of points around the edge
-        private static Vector2[] ApproximateCircle(CircleCollider2D circle, int segments)
-        {
-            var points = new Vector2[segments];
-            float r = circle.radius;
-            for (int i = 0; i < segments; i++)
-            {
-                float angle = i * Mathf.PI * 2 / segments;
-                Vector2 local = new Vector2(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r);
-                points[i] = circle.transform.TransformPoint(local + circle.offset);
-            }
+			while (true)
+			{
+				yield return new Vector2Int(x, y);
 
-            return points;
-        }
+				if (x == endX && y == endY)
+					break;
 
-        // Approximate a capsule as a series of points around its edges
-        private static Vector2[] ApproximateCapsule(CapsuleCollider2D capsule, int segments)
-        {
-            var points = new List<Vector2>();
-            float r = capsule.size.x * 0.5f; // radius of the capsule ends
-            float h = capsule.size.y - 2 * r; // length of the center rectangle
+				int doubleError = 2 * error;
 
-            // Top half-circle
-            for (int i = 0; i < segments; i++)
-            {
-                float angle = Mathf.PI * i / (segments - 1);
-                Vector2 local = new Vector2(Mathf.Cos(angle) * r, Mathf.Sin(angle) * r + h * 0.5f);
-                points.Add(capsule.transform.TransformPoint(local + capsule.offset));
-            }
+				if (doubleError > -dy)
+				{
+					error -= dy;
+					x += stepX;
+				}
 
-            // Bottom half-circle
-            for (int i = 0; i < segments; i++)
-            {
-                float angle = Mathf.PI * i / (segments - 1);
-                Vector2 local = new Vector2(-Mathf.Cos(angle) * r, -Mathf.Sin(angle) * r - h * 0.5f);
-                points.Add(capsule.transform.TransformPoint(local + capsule.offset));
-            }
+				if (doubleError < dx)
+				{
+					error += dx;
+					y += stepY;
+				}
+			}
+		}
 
-            return points.ToArray();
-        }
+		#endregion
 
-        // Compute how much of a cell polygon is covered by the collider polygon
-        private static float ComputePolygonOverlapRatio(Vector2[] colliderPoly, Vector2[] cellPoly,
-            int sampleResolution = 3)
-        {
-            int insideCount = 0;
-            int totalSamples = sampleResolution * sampleResolution;
+		#region Public API - Collider Overlap
 
-            // Get bottom-left and top-right corners of the cell
-            Vector2 min = cellPoly[0];
-            Vector2 max = cellPoly[2];
+		/// <summary>
+		/// Get all grid cells that a 2D collider overlaps.
+		/// </summary>
+		public static List<Vector2Int> GetOverlappingCells(this WorldGridManager grid, Collider2D collider, float overlapThreshold)
+		{
+			if (!TryGetColliderPoints(collider, out Vector2[] colliderPoints))
+				return new List<Vector2Int>();
 
-            // Distance between each sample point
-            float dx = (max.x - min.x) / (sampleResolution - 1);
-            float dy = (max.y - min.y) / (sampleResolution - 1);
+			GridBounds searchBounds = GridBounds.FromWorldBounds(collider.bounds, grid.CellSize);
 
-            // Sample points in a grid across the cell
-            for (int ix = 0; ix < sampleResolution; ix++)
-            {
-                for (int iy = 0; iy < sampleResolution; iy++)
-                {
-                    Vector2 sample = new Vector2(min.x + ix * dx, min.y + iy * dy);
-                    // If the point is inside the collider polygon, count it
-                    if (IsPointInPolygon(sample, colliderPoly))
-                        insideCount++;
-                }
-            }
+			return FindOverlappingCellsInBounds(grid, searchBounds, colliderPoints, overlapThreshold);
+		}
 
-            // Return the fraction of points inside
-            return (float)insideCount / totalSamples;
-        }
+		#endregion
 
-        // Determine if a 2D point is inside a polygon
-        private static bool IsPointInPolygon(Vector2 point, Vector2[] poly)
-        {
-            bool inside = false;
-            // Loop through each edge of the polygon
-            for (int i = 0, j = poly.Length - 1; i < poly.Length; j = i++)
-            {
-                // Check if the horizontal line from the point crosses this edge
-                if (((poly[i].y > point.y) != (poly[j].y > point.y)) &&
-                    (point.x < (poly[j].x - poly[i].x) * (point.y - poly[i].y) / (poly[j].y - poly[i].y) + poly[i].x))
-                    inside = !inside; // toggle the inside flag
-            }
+		#region Private Validation
 
-            return inside; // true if inside, false if outside
-        }
+		private static bool IsValidCollider(Collider2D collider) => collider != null;
 
-        #endregion
-    }
+		private static bool IsValidPolygon(Vector2[] points) => points is { Length: >= MIN_POLYGON_POINTS };
+
+		private static bool TryGetColliderPoints(Collider2D collider, out Vector2[] points)
+		{
+			if (!IsValidCollider(collider))
+			{
+				points = null;
+				return false;
+			}
+
+			points = GetColliderWorldPoints(collider);
+			return IsValidPolygon(points);
+		}
+
+		#endregion
+
+		#region Private Helpers - Overlap Detection
+
+		private static List<Vector2Int> FindOverlappingCellsInBounds(WorldGridManager grid, GridBounds bounds, Vector2[] colliderPoints, float overlapThreshold)
+		{
+			List<Vector2Int> overlappingCells = new();
+
+			for (int x = bounds.MinX; x <= bounds.MaxX; x++)
+			{
+				for (int y = bounds.MinY; y <= bounds.MaxY; y++)
+				{
+					if (!grid.IsValidCell(x, y))
+						continue;
+
+					if (DoesCellOverlapCollider(grid, x, y, colliderPoints, overlapThreshold))
+					{
+						overlappingCells.Add(new Vector2Int(x, y));
+					}
+				}
+			}
+
+			return overlappingCells;
+		}
+
+		private static bool DoesCellOverlapCollider(
+			WorldGridManager grid,
+			int x,
+			int y,
+			Vector2[] colliderPoints,
+			float overlapThreshold)
+		{
+			Vector2[] cellCorners = GetCellPolygon(grid, x, y);
+			float overlapRatio = ComputePolygonOverlapRatio(colliderPoints, cellCorners);
+			return overlapRatio >= overlapThreshold;
+		}
+
+		private static Vector2[] GetCellPolygon(WorldGridManager grid, int x, int y)
+		{
+			float halfCellSize = grid.CellSize * 0.5f;
+			Vector3 cellCenter = grid.CellToWorldSpace(x, y);
+
+			return new Vector2[CELL_CORNER_COUNT]
+			{
+				cellCenter + new Vector3(-halfCellSize, -halfCellSize), // Bottom-left
+				cellCenter + new Vector3(halfCellSize, -halfCellSize), // Bottom-right
+				cellCenter + new Vector3(halfCellSize, halfCellSize), // Top-right
+				cellCenter + new Vector3(-halfCellSize, halfCellSize) // Top-left
+			};
+		}
+
+		#endregion
+
+		#region Private Helpers - Collider Conversion
+
+		private static Vector2[] GetColliderWorldPoints(Collider2D collider)
+		{
+			return collider switch
+			{
+				PolygonCollider2D polygon => GetPolygonPoints(polygon),
+				BoxCollider2D box => GetBoxPoints(box),
+				CapsuleCollider2D capsule => ApproximateCapsule(capsule, CAPSULE_APPROXIMATION_SEGMENTS),
+				CircleCollider2D circle => ApproximateCircle(circle, CIRCLE_APPROXIMATION_SEGMENTS),
+				_ => LogUnsupportedColliderType(collider)
+			};
+		}
+
+		private static Vector2[] GetPolygonPoints(PolygonCollider2D polygon)
+		{
+			Vector2[] localPoints = polygon.points;
+			Vector2[] worldPoints = new Vector2[localPoints.Length];
+
+			for (int i = 0; i < localPoints.Length; i++)
+			{
+				worldPoints[i] = polygon.transform.TransformPoint(localPoints[i]);
+			}
+
+			return worldPoints;
+		}
+
+		private static Vector2[] GetBoxPoints(BoxCollider2D box)
+		{
+			Vector2 halfSize = box.size * 0.5f;
+
+			Vector2[] localCorners = new Vector2[CELL_CORNER_COUNT]
+			{
+				new(-halfSize.x, -halfSize.y), // Bottom-left
+				new(-halfSize.x, halfSize.y), // Top-left
+				new(halfSize.x, halfSize.y), // Top-right
+				new(halfSize.x, -halfSize.y), // Bottom-right
+			};
+
+			Vector2[] worldCorners = new Vector2[CELL_CORNER_COUNT];
+			for (int i = 0; i < CELL_CORNER_COUNT; i++)
+			{
+				worldCorners[i] = box.transform.TransformPoint(localCorners[i] + box.offset);
+			}
+
+			return worldCorners;
+		}
+
+		private static Vector2[] ApproximateCircle(CircleCollider2D circle, int segments)
+		{
+			Vector2[] points = new Vector2[segments];
+			float radius = circle.radius;
+			float angleIncrement = (Mathf.PI * 2f) / segments;
+
+			for (int i = 0; i < segments; i++)
+			{
+				float angle = i * angleIncrement;
+				Vector2 localPoint = new(
+					Mathf.Cos(angle) * radius,
+					Mathf.Sin(angle) * radius
+				);
+
+				points[i] = circle.transform.TransformPoint(localPoint + circle.offset);
+			}
+
+			return points;
+		}
+
+		private static Vector2[] ApproximateCapsule(CapsuleCollider2D capsule, int segmentsPerHalf)
+		{
+			float radius = capsule.size.x * 0.5f;
+			float centerHeight = capsule.size.y - (2f * radius);
+			float topCircleY = centerHeight * 0.5f;
+			float bottomCircleY = -centerHeight * 0.5f;
+
+			List<Vector2> points = new(segmentsPerHalf * 2);
+
+			AddSemicircle(points, capsule, radius, topCircleY, segmentsPerHalf, isTop: true);
+			AddSemicircle(points, capsule, radius, bottomCircleY, segmentsPerHalf, isTop: false);
+
+			return points.ToArray();
+		}
+
+		private static void AddSemicircle(
+			List<Vector2> points,
+			CapsuleCollider2D capsule,
+			float radius,
+			float yOffset,
+			int segments,
+			bool isTop)
+		{
+			float angleIncrement = Mathf.PI / (segments - 1);
+
+			for (int i = 0; i < segments; i++)
+			{
+				float angle = i * angleIncrement;
+				float x = Mathf.Cos(angle) * radius;
+				float y = Mathf.Sin(angle) * radius;
+
+				Vector2 localPoint = isTop ? new Vector2(x, y + yOffset) : new Vector2(-x, -y + yOffset);
+
+				points.Add(capsule.transform.TransformPoint(localPoint + capsule.offset));
+			}
+		}
+
+		private static Vector2[] LogUnsupportedColliderType(Collider2D collider)
+		{
+			Debug.LogWarning($"Unsupported collider type: {collider.GetType().Name}. Supported types: PolygonCollider2D, BoxCollider2D, CircleCollider2D, CapsuleCollider2D");
+			return null;
+		}
+
+		#endregion
+
+		#region Private Helpers - Polygon Math
+
+		private static float ComputePolygonOverlapRatio(
+			Vector2[] colliderPolygon,
+			Vector2[] cellPolygon,
+			int samplesPerAxis = DEFAULT_OVERLAP_SAMPLE_RESOLUTION)
+		{
+			int samplesInside = CountSamplesInsidePolygon(colliderPolygon, cellPolygon, samplesPerAxis);
+			int totalSamples = samplesPerAxis * samplesPerAxis;
+			return (float)samplesInside / totalSamples;
+		}
+
+		private static int CountSamplesInsidePolygon(
+			Vector2[] colliderPolygon,
+			Vector2[] cellPolygon,
+			int samplesPerAxis)
+		{
+			Vector2 cellMin = GetMinCorner(cellPolygon);
+			Vector2 cellMax = GetMaxCorner(cellPolygon);
+
+			float sampleStepX = (cellMax.x - cellMin.x) / (samplesPerAxis - 1);
+			float sampleStepY = (cellMax.y - cellMin.y) / (samplesPerAxis - 1);
+
+			int insideCount = 0;
+
+			for (int ix = 0; ix < samplesPerAxis; ix++)
+			{
+				for (int iy = 0; iy < samplesPerAxis; iy++)
+				{
+					Vector2 samplePoint = new(
+						cellMin.x + (ix * sampleStepX),
+						cellMin.y + (iy * sampleStepY)
+					);
+
+					if (IsPointInPolygon(samplePoint, colliderPolygon))
+					{
+						insideCount++;
+					}
+				}
+			}
+
+			return insideCount;
+		}
+
+		private static Vector2 GetMinCorner(Vector2[] polygon)
+		{
+			float minX = float.MaxValue;
+			float minY = float.MaxValue;
+
+			foreach (Vector2 point in polygon)
+			{
+				if (point.x < minX) minX = point.x;
+				if (point.y < minY) minY = point.y;
+			}
+
+			return new Vector2(minX, minY);
+		}
+
+		private static Vector2 GetMaxCorner(Vector2[] polygon)
+		{
+			float maxX = float.MinValue;
+			float maxY = float.MinValue;
+
+			foreach (Vector2 point in polygon)
+			{
+				if (point.x > maxX) maxX = point.x;
+				if (point.y > maxY) maxY = point.y;
+			}
+
+			return new Vector2(maxX, maxY);
+		}
+
+		private static bool IsPointInPolygon(Vector2 point, Vector2[] polygon)
+		{
+			bool isInside = false;
+			int vertexCount = polygon.Length;
+
+			for (int i = 0; i < vertexCount; i++)
+			{
+				int j = (i == 0) ? vertexCount - 1 : i - 1;
+
+				Vector2 currentVertex = polygon[i];
+				Vector2 previousVertex = polygon[j];
+
+				if (DoesEdgeCrossLine(point, currentVertex, previousVertex))
+				{
+					isInside = !isInside;
+				}
+			}
+
+			return isInside;
+		}
+
+		private static bool DoesEdgeCrossLine(Vector2 point, Vector2 v1, Vector2 v2)
+		{
+			bool verticesStraddleHorizontal = (v1.y > point.y) != (v2.y > point.y);
+
+			if (!verticesStraddleHorizontal)
+				return false;
+
+			float intersectionX = v2.x + (point.y - v2.y) * (v1.x - v2.x) / (v1.y - v2.y);
+			return point.x < intersectionX;
+		}
+
+		#endregion
+	}
 }

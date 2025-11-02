@@ -1,42 +1,43 @@
 namespace ShoelaceStudios.GridSystem
 {
-	public struct FloodFillParams
+	public readonly struct FloodFillParams
 	{
-		public int MaxSteps;
-		public float MaxRadius;
-		public bool StopAtWalls;
+		private readonly int maxSteps;
+		private readonly float maxRadius;
+		private readonly bool stopAtWalls;
 
-		public static FloodFillParams UnlimitedSteps(bool stopAtWalls = true)
+		public int MaxSteps => maxSteps;
+		public float MaxRadius => maxRadius;
+		public bool StopAtWalls => stopAtWalls;
+
+		public bool HasStepLimit => maxSteps > 0;
+		public bool HasRadiusLimit => maxRadius > 0f;
+
+		private FloodFillParams(int maxSteps = 0, float maxRadius = 0f, bool stopAtWalls = true)
 		{
-			return new FloodFillParams
-			{
-				MaxSteps = 0,
-				MaxRadius = 0,
-				StopAtWalls = stopAtWalls
-			};
+			this.maxSteps = maxSteps > 0 ? maxSteps : 0;
+			this.maxRadius = maxRadius > 0f ? maxRadius : 0f;
+			this.stopAtWalls = stopAtWalls;
+		}
+
+		public static FloodFillParams Unlimited(bool stopAtWalls = true)
+		{
+			return new FloodFillParams(0, 0f, stopAtWalls);
 		}
 
 		public static FloodFillParams WithSteps(int steps, bool stopAtWalls = true)
 		{
-			return new FloodFillParams
-			{
-				MaxSteps = steps,
-				MaxRadius = 0,
-				StopAtWalls = stopAtWalls
-			};
+			return new FloodFillParams(steps, 0f, stopAtWalls);
 		}
 
 		public static FloodFillParams WithRadius(float radius, bool stopAtWalls = true)
 		{
-			return new FloodFillParams
-			{
-				MaxSteps = 0,
-				MaxRadius = radius,
-				StopAtWalls = stopAtWalls
-			};
+			return new FloodFillParams(0, radius, stopAtWalls);
 		}
 
-		public bool HasStepLimit => MaxSteps > 0;
-		public bool HasRadiusLimit => MaxRadius > 0f;
+		public static FloodFillParams WithStepsAndRadius(int steps, float radius, bool stopAtWalls = true)
+		{
+			return new FloodFillParams(steps, radius, stopAtWalls);
+		}
 	}
 }
