@@ -48,6 +48,7 @@ namespace ShoelaceStudios.GridSystem
 			int dy = candidate.y - origin.y;
 			return dx * dx + dy * dy <= radius * radius;
 		}
+        
 
 		/// <summary>
 		/// Check if a cell is within square/Manhattan radius of an origin

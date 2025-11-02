@@ -267,6 +267,35 @@ namespace ShoelaceStudios.GridSystem
 			}
 			return new List<Vector2Int>(result);
 		}
+		/// <summary>
+		/// Get all cells within radius from multiple origin points (combined result)
+		/// </summary>
+		public List<Vector2Int> GetCellsInRadius(IEnumerable<Vector2Int> origins, int radius, bool requireLineOfSight = false, bool useCircularShape = true)
+		{
+			HashSet<Vector2Int> result = new();
+
+			foreach (Vector2Int origin in origins)
+			{
+				foreach (Vector2Int candidate in WorldGridUtilities.GetCellsInSquareArea(origin, radius))
+				{
+					if (!IsValidCell(candidate))
+						continue;
+
+					if (useCircularShape && !WorldGridUtilities.IsWithinCircularRadius(origin, candidate, radius))
+						continue;
+
+					if (requireLineOfSight && candidate != origin && 
+					    !WorldGridUtilities.HasLineOfSight(origin, candidate, IsWallCell))
+					{
+						continue;
+					}
+
+					result.Add(candidate);
+				}
+			}
+
+			return new List<Vector2Int>(result);
+		}
 
 		#endregion
 
