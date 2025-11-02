@@ -12,6 +12,7 @@ namespace ShoelaceStudios.GridSystem
 		public Vector3 WorldOrigin; // World position of the bottom-left of the chunk
 		public Bounds WorldBounds; // Cached AABB in world space
 
+
 		public GridChunk(Vector2Int origin, int chunkSize, float cellSize, Vector3 gridOrigin)
 		{
 			Origin = origin;
@@ -20,8 +21,11 @@ namespace ShoelaceStudios.GridSystem
 
 			WorldOrigin = new Vector3(origin.x * chunkSize * cellSize, origin.y * chunkSize * cellSize, 0f) + gridOrigin;
 			Vector3 boundsSize = new(chunkSize * cellSize, chunkSize * cellSize, 1f);
+
 			WorldBounds = new Bounds(WorldOrigin + boundsSize / 2f, boundsSize);
 		}
+
+		#region Indexer
 
 		public T this[int localX, int localY]
 		{
@@ -29,33 +33,41 @@ namespace ShoelaceStudios.GridSystem
 			set => data[localX, localY] = value;
 		}
 
-		public bool TryGetLocal(int globalX, int globalY, out int localX, out int localY)
+		public T this[Vector2Int localCell]
 		{
-			localX = globalX - (Origin.x * ChunkSize);
-			localY = globalY - (Origin.y * ChunkSize);
-			return ValidToChunk(localX, localY);
+			get => data[localCell.x, localCell.y];
+			set => data[localCell.x, localCell.y] = value;
 		}
 
-		public Vector2Int GetGlobalCoords(Vector2Int localCoord)
+		#endregion
+
+		#region Coordinate Conversion
+
+		public Vector2Int GlobalToLocal(int globalX, int globalY)
 		{
-			return GetGlobalCoords(localCoord.x, localCoord.y);
+			return new Vector2Int(globalX - (Origin.x * ChunkSize), globalY - (Origin.y * ChunkSize));
 		}
 
-		public Vector2Int GetGlobalCoords(int localX, int localY)
+		public Vector2Int GlobalToLocal(Vector2Int globalCell)
 		{
-			return new Vector2Int(
-				Origin.x * ChunkSize + localX,
-				Origin.y * ChunkSize + localY
-			);
+			return GlobalToLocal(globalCell.x, globalCell.y);
 		}
 
-		public bool ValidToChunk(int x, int y)
+		public Vector2Int LocalToGlobal(int localX, int localY)
 		{
-			return x >= 0 && y >= 0 && x < ChunkSize && y < ChunkSize;
+			return new Vector2Int(Origin.x * ChunkSize + localX, Origin.y * ChunkSize + localY);
 		}
 
+		public Vector2Int LocalToGlobal(Vector2Int localCell)
+		{
+			return LocalToGlobal(localCell.x, localCell.y);
+		}
 
-		public void ForEachChunkCell(Action<int, int> action)
+		#endregion
+
+		#region Iteration
+
+		public void ForEachCell(Action<int, int> action)
 		{
 			for (int x = 0; x < ChunkSize; x++)
 			{
@@ -65,5 +77,7 @@ namespace ShoelaceStudios.GridSystem
 				}
 			}
 		}
+
+		#endregion
 	}
 }
