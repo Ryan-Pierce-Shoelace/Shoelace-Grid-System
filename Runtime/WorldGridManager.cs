@@ -22,7 +22,8 @@ namespace ShoelaceStudios.GridSystem
 
 		public int GridWidth => gridWidth;
 		public int GridHeight => gridHeight;
-		public float CellSize => grid.cellSize.x;
+		public float CellSize => settings.CellSize;
+
 		public float GridWorldWidth => gridWidth * CellSize;
 		public float GridWorldHeight => gridHeight * CellSize;
 		public Vector2 GridWorldSize => new Vector2(GridWorldWidth, GridWorldHeight);
@@ -32,6 +33,43 @@ namespace ShoelaceStudios.GridSystem
 		private GridTopology topology;
 		private GridObstacles obstacles;
 		private bool isInitialized;
+
+		#region Validation
+
+		protected override void Awake()
+		{
+			base.Awake();
+			ValidateReferences();
+		}
+
+		private void ValidateReferences()
+		{
+			if (settings == null)
+			{
+				Debug.LogError($"[WorldGridManager] GridSettingsSO is NULL on {gameObject.name}! Assign it in the inspector.", this);
+				enabled = false;
+				return;
+			}
+
+			if (grid == null)
+			{
+				grid = GetComponent<Grid>();
+				if (grid == null)
+				{
+					Debug.LogError($"[WorldGridManager] Grid component is NULL on {gameObject.name}! Add a Grid component.", this);
+					enabled = false;
+					return;
+				}
+			}
+
+			if (wallTileMap == null)
+			{
+				Debug.LogError($"[WorldGridManager] WallTileMap is NULL on {gameObject.name}! Assign it in the inspector.", this);
+				enabled = false;
+			}
+		}
+
+		#endregion
 
 
 		#region Setup
@@ -151,7 +189,7 @@ namespace ShoelaceStudios.GridSystem
 		{
 			return topology.WorldToCell(worldPosition, grid);
 		}
-		
+
 		#endregion
 
 		#region Public API - Wall managment
@@ -265,8 +303,10 @@ namespace ShoelaceStudios.GridSystem
 
 				result.Add(candidate);
 			}
+
 			return new List<Vector2Int>(result);
 		}
+
 		/// <summary>
 		/// Get all cells within radius from multiple origin points (combined result)
 		/// </summary>
@@ -284,7 +324,7 @@ namespace ShoelaceStudios.GridSystem
 					if (useCircularShape && !WorldGridUtilities.IsWithinCircularRadius(origin, candidate, radius))
 						continue;
 
-					if (requireLineOfSight && candidate != origin && 
+					if (requireLineOfSight && candidate != origin &&
 					    !WorldGridUtilities.HasLineOfSight(origin, candidate, IsWallCell))
 					{
 						continue;
@@ -310,7 +350,7 @@ namespace ShoelaceStudios.GridSystem
 		{
 			return !allowedRegion.Contains(start) ? new HashSet<Vector2Int>() : ExecuteFloodFill(start, parameters, regionConstraint: allowedRegion);
 		}
-		
+
 		#endregion
 
 		#region Private - Floodfill
