@@ -74,8 +74,9 @@ namespace ShoelaceStudios.GridSystem
 
 		#region Setup
 
-		private void Start()
+		public void InitWithSettings(GridSettingsSO gridSettingsSO)
 		{
+			settings = gridSettingsSO;
 			InitializeGrid();
 		}
 
