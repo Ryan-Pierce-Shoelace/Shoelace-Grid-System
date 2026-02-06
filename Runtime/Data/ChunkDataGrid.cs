@@ -10,35 +10,27 @@ namespace ShoelaceStudios.GridSystem
 		private readonly int chunkSize;
 		private readonly int width;
 		private readonly int height;
+		private readonly float cellSize;
+		private readonly Vector3 worldOrigin;
+
 		private readonly Dictionary<Vector2Int, GridChunk<T>> chunks;
 		private readonly Dictionary<Vector2Int, ChunkRuntimeState> runtimeStates;
 
-		readonly float cellSize;
-		readonly Vector3 worldOrigin;
+		public int Width => width;
+		public int Height => height;
+		public int ChunkSize => chunkSize;
+
 
 		public ChunkDataGrid(int width, int height, int chunkSize, float cellSize, Vector3 worldOrigin)
 		{
 			this.width = width;
 			this.height = height;
 			this.chunkSize = chunkSize;
-
 			this.cellSize = cellSize;
 			this.worldOrigin = worldOrigin;
 
 			chunks = new Dictionary<Vector2Int, GridChunk<T>>();
 			runtimeStates = new Dictionary<Vector2Int, ChunkRuntimeState>();
-
-			int chunksX = Mathf.CeilToInt(width / chunkSize);
-			int chunksY = Mathf.CeilToInt(height / chunkSize);
-
-			for (int x = 0; x < chunksX; x++)
-			{
-				for (int y = 0; y < chunksY; y++)
-				{
-					Vector2Int coord = new(x, y);
-					chunks[coord] = new GridChunk<T>(coord, chunkSize, cellSize, worldOrigin);
-				}
-			}
 		}
 
 		#endregion
@@ -47,53 +39,106 @@ namespace ShoelaceStudios.GridSystem
 
 		public T this[int x, int y]
 		{
-			get => GetValue(x, y);
-			set => SetValue(x, y, value);
+			get => GetCell(x, y);
+			set => SetCell(x, y, value);
 		}
 
-		private T GetValue(int x, int y)
+		public T this[Vector2Int cell]
 		{
-			if (!IsValid(x, y))
-			{
-				//Debug.Log("Cell Not Valid : " + X + ", " + Y);
+			get => GetCell(cell.x, cell.y);
+			set => SetCell(cell.x, cell.y, value);
+		}
+
+		public T GetCell(int x, int y)
+		{
+			if (!IsValidCell(x, y))
 				return default;
-			}
 
-			Vector2Int chunkCoord = GetChunkCoord(x, y);
-			if (chunks.TryGetValue(chunkCoord, out GridChunk<T> chunk) && chunk.TryGetLocal(x, y, out int localX, out int localY))
-			{
-				return chunk[localX, localY];
-			}
+			ChunkCoordinate coord = ChunkCoordinate.FromGlobal(x, y, chunkSize);
 
-			return default;
+			if (!chunks.TryGetValue(coord.ChunkIndex, out GridChunk<T> chunk))
+				return default;
+
+			return chunk[coord.LocalCell.x, coord.LocalCell.y];
 		}
 
-		private void SetValue(int x, int y, T value)
+		public void SetCell(int x, int y, T value)
 		{
-			if (!IsValid(x, y))
-			{
-				//Debug.Log("Cell Not Valid : " +  X + ", " + Y);
+			if (!IsValidCell(x, y))
 				return;
+
+			ChunkCoordinate coord = ChunkCoordinate.FromGlobal(x, y, chunkSize);
+
+			if (!chunks.TryGetValue(coord.ChunkIndex, out GridChunk<T> chunk))
+			{
+				chunk = new GridChunk<T>(coord.ChunkIndex, chunkSize, cellSize, worldOrigin);
+				chunks[coord.ChunkIndex] = chunk;
 			}
 
-			Vector2Int chunkCoord = GetChunkCoord(x, y);
-			if (!chunks.TryGetValue(chunkCoord, out GridChunk<T> chunk))
+			chunk[coord.LocalCell.x, coord.LocalCell.y] = value;
+		}
+
+		public bool TryGetCell(int x, int y, out T value)
+		{
+			if (!IsValidCell(x, y))
 			{
-				chunk = new GridChunk<T>(chunkCoord, chunkSize, cellSize, worldOrigin);
-				chunks[chunkCoord] = chunk;
+				value = default;
+				return false;
 			}
 
-			if (chunk.TryGetLocal(x, y, out int localX, out int localY))
+			ChunkCoordinate coord = ChunkCoordinate.FromGlobal(x, y, chunkSize);
+
+			if (!chunks.TryGetValue(coord.ChunkIndex, out GridChunk<T> chunk))
 			{
-				chunk[localX, localY] = value;
+				value = default;
+				return false;
 			}
-			else
-			{
-				Debug.Log("Chunk invalid");
-			}
+
+			value = chunk[coord.LocalCell.x, coord.LocalCell.y];
+			return true;
 		}
 
 		#endregion
+
+		#region Validation
+
+		public bool IsValidCell(int x, int y)
+		{
+			return x >= 0 && x < width && y >= 0 && y < height;
+		}
+
+		public bool IsValidCell(Vector2Int cell)
+		{
+			return IsValidCell(cell.x, cell.y);
+		}
+
+		#endregion
+
+		#region Chunk Queries
+
+		public Vector2Int GetChunkIndex(int x, int y)
+		{
+			return new Vector2Int(
+				Mathf.FloorToInt((float)x / chunkSize),
+				Mathf.FloorToInt((float)y / chunkSize)
+			);
+		}
+
+		public bool TryGetChunk(int x, int y, out GridChunk<T> chunk)
+		{
+			Vector2Int chunkIndex = GetChunkIndex(x, y);
+			return chunks.TryGetValue(chunkIndex, out chunk);
+		}
+
+		public bool TryGetChunk(Vector2Int chunkIndex, out GridChunk<T> chunk)
+		{
+			return chunks.TryGetValue(chunkIndex, out chunk);
+		}
+
+		public IEnumerable<GridChunk<T>> GetAllChunks() => chunks.Values;
+
+		#endregion
+
 
 		#region Helpers
 
@@ -110,14 +155,6 @@ namespace ShoelaceStudios.GridSystem
 		private bool IsValid(int x, int y)
 		{
 			return x >= 0 && x < width && y >= 0 && y < height;
-		}
-
-		public IEnumerable<GridChunk<T>> GetAllChunks() => chunks.Values;
-
-		public bool TryGetChunk(int x, int y, out GridChunk<T> chunk)
-		{
-			Vector2Int chunkCoord = GetChunkCoord(x, y);
-			return chunks.TryGetValue(chunkCoord, out chunk);
 		}
 
 		#endregion
@@ -143,11 +180,10 @@ namespace ShoelaceStudios.GridSystem
 
 		public ChunkRuntimeState GetRuntimeState(Vector2Int chunkCoord)
 		{
-			if (!runtimeStates.TryGetValue(chunkCoord, out ChunkRuntimeState state))
-			{
-				state = new ChunkRuntimeState();
-				runtimeStates[chunkCoord] = state;
-			}
+			if (runtimeStates.TryGetValue(chunkCoord, out ChunkRuntimeState state)) return state;
+
+			state = new ChunkRuntimeState();
+			runtimeStates[chunkCoord] = state;
 
 			return state;
 		}
