@@ -26,8 +26,8 @@ namespace ShoelaceStudios.GridSystem.Partition
 			Vector3 topRight = world.GetWorldFromCell(MaxX, MaxY);
 
 			WorldBounds = new Bounds(
-				center: (bottomLeft + topRight) * 0.5f,
-				size: new Vector3(
+				(bottomLeft + topRight) * 0.5f,
+				new Vector3(
 					(MaxX - MinX + 1) * world.CellSize,
 					(MaxY - MinY + 1) * world.CellSize,
 					1f));

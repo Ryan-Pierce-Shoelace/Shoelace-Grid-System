@@ -44,9 +44,8 @@ namespace ShoelaceStudios.GridSystem.Partition
 		public void ForEachActiveChunk(Action<DataChunk<T>> action)
 		{
 			foreach (DataChunk<T> chunk in chunks.Values)
-			{
-				if (chunk.HasData) action(chunk);
-			}
+				if (chunk.HasData)
+					action(chunk);
 		}
 
 //TODO add a way to filter the chunks and have a foreach filtered or something

@@ -16,9 +16,24 @@ namespace ShoelaceStudios.GridSystem.FloodFill
 			StopAtWalls = stopAtWalls;
 		}
 
-		public static FloodFillParams Unlimited(bool stopAtWalls = true) => new(0, 0f, stopAtWalls);
-		public static FloodFillParams WithSteps(int steps, bool stopAtWalls = true) => new(steps, 0f, stopAtWalls);
-		public static FloodFillParams WithRadius(float radius, bool stopAtWalls = true) => new(0, radius, stopAtWalls);
-		public static FloodFillParams WithStepsAndRadius(int steps, float radius, bool stopAtWalls = true) => new(steps, radius, stopAtWalls);
+		public static FloodFillParams Unlimited(bool stopAtWalls = true)
+		{
+			return new FloodFillParams(0, 0f, stopAtWalls);
+		}
+
+		public static FloodFillParams WithSteps(int steps, bool stopAtWalls = true)
+		{
+			return new FloodFillParams(steps, 0f, stopAtWalls);
+		}
+
+		public static FloodFillParams WithRadius(float radius, bool stopAtWalls = true)
+		{
+			return new FloodFillParams(0, radius, stopAtWalls);
+		}
+
+		public static FloodFillParams WithStepsAndRadius(int steps, float radius, bool stopAtWalls = true)
+		{
+			return new FloodFillParams(steps, radius, stopAtWalls);
+		}
 	}
 }

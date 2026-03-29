@@ -22,8 +22,8 @@ namespace ShoelaceStudios.GridSystem.Core
 		[Header("Gizmos")]
 		[SerializeField] private bool showGizmos = true;
 		[SerializeField] private bool showGizmosOnSelected = true;
-		[SerializeField] private Color gridColor = new Color(1f, 1f, 1f, 0.1f);
-		[SerializeField] private Color selectedGridColor = new Color(1f, 1f, 0f, 0.3f);
+		[SerializeField] private Color gridColor = new(1f, 1f, 1f, 0.1f);
+		[SerializeField] private Color selectedGridColor = new(1f, 1f, 0f, 0.3f);
 
 		public IWorldGrid Grid { get; private set; }
 		public WorldPartition WorldPartition { get; private set; }
@@ -55,7 +55,7 @@ namespace ShoelaceStudios.GridSystem.Core
 			{
 				if (!IsBorderCell(x, y)) return;
 
-				AddWall(new Vector2Int(x, y), paintTile: true);
+				AddWall(new Vector2Int(x, y), true);
 			});
 		}
 
@@ -80,10 +80,7 @@ namespace ShoelaceStudios.GridSystem.Core
 
 			Grid = new WorldGrid(gridWidth, gridHeight, cellSize, transform.position);
 
-			if (buildPerimeterWall)
-			{
-				BuildPerimeterWalls();
-			}
+			if (buildPerimeterWall) BuildPerimeterWalls();
 
 			PopulateWalls();
 			IsInitialized = true;
@@ -118,7 +115,7 @@ namespace ShoelaceStudios.GridSystem.Core
 				return GetDataLayer<T>(layerName);
 			}
 
-			DataGrid<T> grid = new DataGrid<T>(gridWidth, gridHeight, layerName);
+			DataGrid<T> grid = new(gridWidth, gridHeight, layerName);
 			flatLayers[layerName] = grid;
 			return grid;
 		}
@@ -131,8 +128,15 @@ namespace ShoelaceStudios.GridSystem.Core
 		}
 
 
-		public bool HasDataLayer(string layerName) => flatLayers.ContainsKey(layerName);
-		public bool HasSpatialDataLayer(string layerName) => spatialLayers.ContainsKey(layerName);
+		public bool HasDataLayer(string layerName)
+		{
+			return flatLayers.ContainsKey(layerName);
+		}
+
+		public bool HasSpatialDataLayer(string layerName)
+		{
+			return spatialLayers.ContainsKey(layerName);
+		}
 
 		public void RemoveDataLayer(string layerName)
 		{
@@ -249,15 +253,13 @@ namespace ShoelaceStudios.GridSystem.Core
 			Vector3 origin = transform.position;
 
 			for (int x = 0; x < gridWidth; x++)
+			for (int y = 0; y < gridHeight; y++)
 			{
-				for (int y = 0; y < gridHeight; y++)
-				{
-					Vector3 center = new Vector3(x * cellSize, y * cellSize, 0f)
-					                 + new Vector3(cellSize * 0.5f, cellSize * 0.5f, 0f)
-					                 + origin;
+				Vector3 center = new Vector3(x * cellSize, y * cellSize, 0f)
+				                 + new Vector3(cellSize * 0.5f, cellSize * 0.5f, 0f)
+				                 + origin;
 
-					Gizmos.DrawWireCube(center, new Vector3(cellSize, cellSize, 0f));
-				}
+				Gizmos.DrawWireCube(center, new Vector3(cellSize, cellSize, 0f));
 			}
 		}
 		#endif

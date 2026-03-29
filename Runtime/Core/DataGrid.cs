@@ -36,10 +36,7 @@ namespace ShoelaceStudios.GridSystem.Core
 
 		public void SetValue(int x, int y, T value)
 		{
-			if (!IsValid(x, y))
-			{
-				throw new ArgumentOutOfRangeException($"Cell ({x},{y}) out of bounds ({width}x{height}).");
-			}
+			if (!IsValid(x, y)) throw new ArgumentOutOfRangeException($"Cell ({x},{y}) out of bounds ({width}x{height}).");
 
 			gridData[x, y] = value;
 		}
@@ -64,14 +61,8 @@ namespace ShoelaceStudios.GridSystem.Core
 		public void ForEachCell(Action<int, int> action)
 		{
 			for (int x = 0; x < width; x++)
-			{
-				for (int y = 0; y < height; y++)
-				{
-					action(x, y);
-				}
-			}
+			for (int y = 0; y < height; y++)
+				action(x, y);
 		}
-		
-		
 	}
 }

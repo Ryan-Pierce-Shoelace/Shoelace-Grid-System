@@ -19,7 +19,7 @@ namespace ShoelaceStudios.GridSystem.FloodFill
 			Queue<FloodFillState> frontier = new();
 
 			visited.Add(start);
-			frontier.Enqueue(new FloodFillState(start, depth: 0));
+			frontier.Enqueue(new FloodFillState(start, 0));
 
 			float radiusSqr = parameters.MaxRadius * parameters.MaxRadius;
 			Vector3 startWorld = parameters.HasRadiusLimit ? grid.GetWorldFromCell(start.x, start.y) : Vector3.zero;
@@ -82,8 +82,7 @@ namespace ShoelaceStudios.GridSystem.FloodFill
 
 			return true;
 		}
-		
-		
+
 
 		private struct FloodFillState
 		{

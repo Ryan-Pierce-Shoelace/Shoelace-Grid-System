@@ -32,12 +32,8 @@ namespace ShoelaceStudios.GridSystem.Utils
 		public void ForEachCell(System.Action<int, int> action)
 		{
 			for (int x = minX; x <= maxX; x++)
-			{
-				for (int y = minY; y <= maxY; y++)
-				{
-					action(x, y);
-				}
-			}
+			for (int y = minY; y <= maxY; y++)
+				action(x, y);
 		}
 
 		public bool Contains(int x, int y)

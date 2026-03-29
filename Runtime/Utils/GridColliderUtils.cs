@@ -56,10 +56,7 @@ namespace ShoelaceStudios.GridSystem.Utils
 			Vector2[] localPoints = polygon.points;
 			Vector2[] worldPoints = new Vector2[localPoints.Length];
 
-			for (int i = 0; i < localPoints.Length; i++)
-			{
-				worldPoints[i] = polygon.transform.TransformPoint(localPoints[i]);
-			}
+			for (int i = 0; i < localPoints.Length; i++) worldPoints[i] = polygon.transform.TransformPoint(localPoints[i]);
 
 			return worldPoints;
 		}
@@ -73,15 +70,12 @@ namespace ShoelaceStudios.GridSystem.Utils
 				new(-halfSize.x, -halfSize.y), // Bottom-left
 				new(-halfSize.x, halfSize.y), // Top-left
 				new(halfSize.x, halfSize.y), // Top-right
-				new(halfSize.x, -halfSize.y), // Bottom-right
+				new(halfSize.x, -halfSize.y) // Bottom-right
 			};
 
 			Vector2[] worldCorners = new Vector2[CELL_CORNER_COUNT];
 
-			for (int i = 0; i < CELL_CORNER_COUNT; i++)
-			{
-				worldCorners[i] = box.transform.TransformPoint(localCorners[i] + box.offset);
-			}
+			for (int i = 0; i < CELL_CORNER_COUNT; i++) worldCorners[i] = box.transform.TransformPoint(localCorners[i] + box.offset);
 
 			return worldCorners;
 		}
@@ -89,7 +83,7 @@ namespace ShoelaceStudios.GridSystem.Utils
 		private static Vector2[] ApproximateCircle(CircleCollider2D circle, int segments)
 		{
 			Vector2[] points = new Vector2[segments];
-			float angleIncrement = (Mathf.PI * 2f) / segments;
+			float angleIncrement = Mathf.PI * 2f / segments;
 
 			for (int i = 0; i < segments; i++)
 			{
@@ -105,14 +99,14 @@ namespace ShoelaceStudios.GridSystem.Utils
 		{
 			Vector2 size = capsule.size;
 			float radius = size.x * 0.5f;
-			float centerHeight = size.y - (2f * radius);
+			float centerHeight = size.y - 2f * radius;
 			float topCircleY = centerHeight * 0.5f;
 			float bottomCircleY = -centerHeight * 0.5f;
 
 			List<Vector2> points = new(segmentsPerHalf * 2);
 
-			AddSemicircle(points, capsule, radius, topCircleY, segmentsPerHalf, isTop: true);
-			AddSemicircle(points, capsule, radius, bottomCircleY, segmentsPerHalf, isTop: false);
+			AddSemicircle(points, capsule, radius, topCircleY, segmentsPerHalf, true);
+			AddSemicircle(points, capsule, radius, bottomCircleY, segmentsPerHalf, false);
 
 			return points.ToArray();
 		}
@@ -184,19 +178,14 @@ namespace ShoelaceStudios.GridSystem.Utils
 			int insideCount = 0;
 
 			for (int ix = 0; ix < samplesPerAxis; ix++)
+			for (int iy = 0; iy < samplesPerAxis; iy++)
 			{
-				for (int iy = 0; iy < samplesPerAxis; iy++)
-				{
-					Vector2 samplePoint = new(
-						cellMin.x + (ix * sampleStepX),
-						cellMin.y + (iy * sampleStepY)
-					);
+				Vector2 samplePoint = new(
+					cellMin.x + ix * sampleStepX,
+					cellMin.y + iy * sampleStepY
+				);
 
-					if (IsPointInPolygon(samplePoint, colliderPolygon))
-					{
-						insideCount++;
-					}
-				}
+				if (IsPointInPolygon(samplePoint, colliderPolygon)) insideCount++;
 			}
 
 			return insideCount;
@@ -237,15 +226,12 @@ namespace ShoelaceStudios.GridSystem.Utils
 
 			for (int i = 0; i < vertexCount; i++)
 			{
-				int j = (i == 0) ? vertexCount - 1 : i - 1;
+				int j = i == 0 ? vertexCount - 1 : i - 1;
 
 				Vector2 currentVertex = polygon[i];
 				Vector2 previousVertex = polygon[j];
 
-				if (DoesEdgeCrossLine(point, currentVertex, previousVertex))
-				{
-					isInside = !isInside;
-				}
+				if (DoesEdgeCrossLine(point, currentVertex, previousVertex)) isInside = !isInside;
 			}
 
 			return isInside;
@@ -253,7 +239,7 @@ namespace ShoelaceStudios.GridSystem.Utils
 
 		private static bool DoesEdgeCrossLine(Vector2 point, Vector2 v1, Vector2 v2)
 		{
-			bool verticesStraddleHorizontal = (v1.y > point.y) != (v2.y > point.y);
+			bool verticesStraddleHorizontal = v1.y > point.y != v2.y > point.y;
 
 			if (!verticesStraddleHorizontal)
 				return false;
@@ -267,9 +253,15 @@ namespace ShoelaceStudios.GridSystem.Utils
 
 		#region private Validation
 
-		private static bool IsValidCollider(Collider2D collider) => collider != null;
+		private static bool IsValidCollider(Collider2D collider)
+		{
+			return collider != null;
+		}
 
-		private static bool IsValidPolygon(Vector2[] points) => points is { Length: >= MIN_POLYGON_POINTS };
+		private static bool IsValidPolygon(Vector2[] points)
+		{
+			return points is { Length: >= MIN_POLYGON_POINTS };
+		}
 
 		private static Vector2[] LogUnsupportedColliderType(Collider2D collider)
 		{

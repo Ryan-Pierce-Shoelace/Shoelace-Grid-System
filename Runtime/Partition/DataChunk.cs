@@ -18,9 +18,20 @@ namespace ShoelaceStudios.GridSystem.Partition
 
 		#region State
 
-		public void MarkDirty() => IsDirty = true;
-		public void ClearDirty() => IsDirty = false;
-		public void SetHasData(bool value) => HasData = value;
+		public void MarkDirty()
+		{
+			IsDirty = true;
+		}
+
+		public void ClearDirty()
+		{
+			IsDirty = false;
+		}
+
+		public void SetHasData(bool value)
+		{
+			HasData = value;
+		}
 
 		#endregion
 

@@ -20,7 +20,10 @@ namespace ShoelaceStudios.GridSystem.Partition
 			ChunksY = Mathf.CeilToInt((float)height / chunkSize);
 		}
 
-		public bool TryGetChunk(Vector2Int index, out TChunk chunk) => chunks.TryGetValue(index, out chunk);
+		public bool TryGetChunk(Vector2Int index, out TChunk chunk)
+		{
+			return chunks.TryGetValue(index, out chunk);
+		}
 
 		public TChunk GetChunkContaining(Vector2Int cell)
 		{
@@ -28,8 +31,15 @@ namespace ShoelaceStudios.GridSystem.Partition
 			return chunks.TryGetValue(index, out TChunk chunk) ? chunk : throw new ArgumentOutOfRangeException($"Cell {cell} has no chunk.");
 		}
 
-		public IEnumerable<TChunk> GetAllChunks() => chunks.Values;
-		public IEnumerable<Vector2Int> GetAllChunkIndices() => chunks.Keys;
+		public IEnumerable<TChunk> GetAllChunks()
+		{
+			return chunks.Values;
+		}
+
+		public IEnumerable<Vector2Int> GetAllChunkIndices()
+		{
+			return chunks.Keys;
+		}
 
 		public void ForEachChunk(Action<TChunk> action)
 		{

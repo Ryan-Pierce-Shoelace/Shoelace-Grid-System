@@ -15,11 +15,29 @@ namespace ShoelaceStudios.GridSystem.Visibility
 			current.Clear();
 		}
 
-		public void Register(Vector2Int index) => current.Add(index);
+		public void Register(Vector2Int index)
+		{
+			current.Add(index);
+		}
 
-		public bool IsVisibleNow(Vector2Int index) => current.Contains(index);
-		public bool WasVisible(Vector2Int index) => previous.Contains(index);
-		public bool BecameVisible(Vector2Int index) => IsVisibleNow(index) && !WasVisible(index);
-		public bool BecameInvisible(Vector2Int index) => !IsVisibleNow(index) && WasVisible(index);
+		public bool IsVisibleNow(Vector2Int index)
+		{
+			return current.Contains(index);
+		}
+
+		public bool WasVisible(Vector2Int index)
+		{
+			return previous.Contains(index);
+		}
+
+		public bool BecameVisible(Vector2Int index)
+		{
+			return IsVisibleNow(index) && !WasVisible(index);
+		}
+
+		public bool BecameInvisible(Vector2Int index)
+		{
+			return !IsVisibleNow(index) && WasVisible(index);
+		}
 	}
 }

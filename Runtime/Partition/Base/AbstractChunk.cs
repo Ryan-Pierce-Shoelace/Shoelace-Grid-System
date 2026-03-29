@@ -27,9 +27,11 @@ namespace ShoelaceStudios.GridSystem.Partition
 				action(x, y);
 		}
 
-		public static Vector2Int CellToChunkIndex(int x, int y, int chunkSize) =>
-			new(
+		public static Vector2Int CellToChunkIndex(int x, int y, int chunkSize)
+		{
+			return new Vector2Int(
 				Mathf.FloorToInt((float)x / chunkSize),
 				Mathf.FloorToInt((float)y / chunkSize));
+		}
 	}
 }

@@ -45,7 +45,10 @@ namespace ShoelaceStudios.GridSystem.Core
 			return new Vector3(x * cellSize, y * cellSize, 0f) + cellCenterOffset + gridOrigin;
 		}
 
-		public Vector3 GetWorldFromCell(Vector2Int cell) => GetWorldFromCell(cell.x, cell.y);
+		public Vector3 GetWorldFromCell(Vector2Int cell)
+		{
+			return GetWorldFromCell(cell.x, cell.y);
+		}
 
 		public Vector2Int GetCellFromWorld(Vector3 worldPosition)
 		{
@@ -141,12 +144,8 @@ namespace ShoelaceStudios.GridSystem.Core
 		public void ForEachCell(Action<int, int> action)
 		{
 			for (int x = 0; x < width; x++)
-			{
-				for (int y = 0; y < height; y++)
-				{
-					action(x, y);
-				}
-			}
+			for (int y = 0; y < height; y++)
+				action(x, y);
 		}
 
 		public void ForEachNeighbor4(Vector2Int cell, Action<Vector2Int> action)
@@ -199,27 +198,53 @@ namespace ShoelaceStudios.GridSystem.Core
 
 		#region Walls and Pathing
 
-		public bool IsWallCell(int x, int y) => walls.Contains(new Vector2Int(x, y));
-		public bool IsWallCell(Vector2Int cell) => walls.Contains(cell);
+		public bool IsWallCell(int x, int y)
+		{
+			return walls.Contains(new Vector2Int(x, y));
+		}
 
-		public bool IsWalkable(int x, int y) => IsValidCell(x, y) && !IsWallCell(x, y);
-		public bool IsWalkable(Vector2Int cell) => IsWalkable(cell.x, cell.y);
+		public bool IsWallCell(Vector2Int cell)
+		{
+			return walls.Contains(cell);
+		}
 
-		public void AddWall(Vector2Int cell) => walls.Add(cell);
-		public void RemoveWall(Vector2Int cell) => walls.Remove(cell);
-		public void ClearWalls() => walls.Clear();
+		public bool IsWalkable(int x, int y)
+		{
+			return IsValidCell(x, y) && !IsWallCell(x, y);
+		}
+
+		public bool IsWalkable(Vector2Int cell)
+		{
+			return IsWalkable(cell.x, cell.y);
+		}
+
+		public void AddWall(Vector2Int cell)
+		{
+			walls.Add(cell);
+		}
+
+		public void RemoveWall(Vector2Int cell)
+		{
+			walls.Remove(cell);
+		}
+
+		public void ClearWalls()
+		{
+			walls.Clear();
+		}
 
 		public void SetWalls(IEnumerable<Vector2Int> wallCells)
 		{
 			walls.Clear();
 			foreach (Vector2Int cell in wallCells)
-			{
 				if (IsValidCell(cell))
 					walls.Add(cell);
-			}
 		}
 
-		public IEnumerable<Vector2Int> GetAllWalls() => walls;
+		public IEnumerable<Vector2Int> GetAllWalls()
+		{
+			return walls;
+		}
 
 		#endregion
 	}

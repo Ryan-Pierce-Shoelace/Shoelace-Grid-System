@@ -16,13 +16,25 @@ namespace ShoelaceStudios.GridSystem.Visibility
 			state.Swap();
 		}
 
-		public bool IsVisibleNow(Camera cam, Vector2Int chunkOrigin) => visibilityStates.TryGetValue(cam, out CameraVisibilityState state) && state.IsVisibleNow(chunkOrigin);
+		public bool IsVisibleNow(Camera cam, Vector2Int chunkOrigin)
+		{
+			return visibilityStates.TryGetValue(cam, out CameraVisibilityState state) && state.IsVisibleNow(chunkOrigin);
+		}
 
-		public bool WasVisible(Camera cam, Vector2Int chunkOrigin) => visibilityStates.TryGetValue(cam, out CameraVisibilityState state) && state.WasVisible(chunkOrigin);
+		public bool WasVisible(Camera cam, Vector2Int chunkOrigin)
+		{
+			return visibilityStates.TryGetValue(cam, out CameraVisibilityState state) && state.WasVisible(chunkOrigin);
+		}
 
-		public bool BecameVisible(Camera cam, Vector2Int chunkOrigin) => visibilityStates.TryGetValue(cam, out CameraVisibilityState state) && state.BecameVisible(chunkOrigin);
+		public bool BecameVisible(Camera cam, Vector2Int chunkOrigin)
+		{
+			return visibilityStates.TryGetValue(cam, out CameraVisibilityState state) && state.BecameVisible(chunkOrigin);
+		}
 
-		public bool BecameInvisible(Camera cam, Vector2Int chunkOrigin) => visibilityStates.TryGetValue(cam, out CameraVisibilityState state) && state.BecameInvisible(chunkOrigin);
+		public bool BecameInvisible(Camera cam, Vector2Int chunkOrigin)
+		{
+			return visibilityStates.TryGetValue(cam, out CameraVisibilityState state) && state.BecameInvisible(chunkOrigin);
+		}
 
 		public void EvaluatePartition(Camera cam, WorldPartition partition)
 		{
@@ -32,10 +44,8 @@ namespace ShoelaceStudios.GridSystem.Visibility
 			Plane[] frustum = GeometryUtility.CalculateFrustumPlanes(cam);
 
 			foreach (WorldChunk chunk in partition.GetAllChunks())
-			{
 				if (GeometryUtility.TestPlanesAABB(frustum, chunk.WorldBounds))
 					state.Register(chunk.Index);
-			}
 		}
 
 
@@ -58,9 +68,15 @@ namespace ShoelaceStudios.GridSystem.Visibility
 				visibilityStates[cam] = new CameraVisibilityState();
 		}
 
-		public void UntrackCamera(Camera cam) => visibilityStates.Remove(cam);
+		public void UntrackCamera(Camera cam)
+		{
+			visibilityStates.Remove(cam);
+		}
 
-		public void Clear() => visibilityStates.Clear();
+		public void Clear()
+		{
+			visibilityStates.Clear();
+		}
 
 		#endregion
 	}
