@@ -7,7 +7,7 @@ using UnityEngine.Tilemaps;
 
 namespace ShoelaceStudios.GridSystem.Core
 {
-	public abstract class WorldGridManager : Singleton<WorldGridManager>
+	public class WorldGridManager : Singleton<WorldGridManager>
 	{
 		[Header("Grid Settings")]
 		[SerializeField] private int gridWidth;
