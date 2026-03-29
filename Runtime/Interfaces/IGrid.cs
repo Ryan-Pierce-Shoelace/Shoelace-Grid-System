@@ -13,5 +13,6 @@ namespace ShoelaceStudios.GridSystem
 		void SetValue(Vector2Int pos, T value);
 		void Clear();
 		void ForEachCell(Action<int, int> action);
+		void ForEachCell(Action<int, int, T> action);
 	}
 }

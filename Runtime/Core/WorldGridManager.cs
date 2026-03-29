@@ -14,24 +14,25 @@ namespace ShoelaceStudios.GridSystem.Core
 		[SerializeField] private int gridWidth;
 		[SerializeField] private int gridHeight;
 		[SerializeField] private float cellSize = 1f;
+		[SerializeField] private int partitionChunkSize = 16;
 		[SerializeField] private bool buildPerimeterWall;
-		[SerializeField] private Grid unityGrid;
+
 		[Header("Tilemap")]
+		[SerializeField] private Grid unityGrid;
 		[SerializeField] private Tilemap wallTilemap;
 		[SerializeField] private TileBase wallTile;
 
 		[Header("Gizmos")]
 		[SerializeField] private bool showGizmos = true;
 		[SerializeField] private bool showGizmosOnSelected = true;
-		[SerializeField] private Color gridColor = new(1f, 1f, 1f, 0.1f);
-		[SerializeField] private Color selectedGridColor = new(1f, 1f, 0f, 0.3f);
-
+		[SerializeField] private Color gridColor = new(0, 1f, 1f);
+		[SerializeField] private Color selectedGridColor = new(1f, 1f, 0f);
+		public float CellSize => cellSize;
 		public IWorldGrid Grid { get; private set; }
 		public WorldPartition WorldPartition { get; private set; }
 		public bool IsInitialized { get; private set; }
 
-		private readonly Dictionary<string, IDataLayer> flatLayers = new();
-		private readonly Dictionary<string, IDataLayer> spatialLayers = new();
+		private readonly Dictionary<string, IDataLayer> layers = new();
 
 		#region Setup
 
@@ -39,12 +40,9 @@ namespace ShoelaceStudios.GridSystem.Core
 		{
 			base.Awake();
 			ValidateRefs();
-		}
-
-		protected void Start()
-		{
 			Initialize();
 		}
+
 
 		public virtual void Initialize()
 		{
@@ -56,6 +54,7 @@ namespace ShoelaceStudios.GridSystem.Core
 
 			SyncUnityGrid();
 			Grid = new WorldGrid(gridWidth, gridHeight, cellSize, transform.position);
+			WorldPartition = new WorldPartition(Grid, partitionChunkSize);
 			IsInitialized = true;
 
 			if (buildPerimeterWall) BuildPerimeterWalls();
@@ -71,6 +70,7 @@ namespace ShoelaceStudios.GridSystem.Core
 			Grid = new WorldGrid(gridWidth, gridHeight, cellSize, transform.position);
 		}
 
+
 		private void SyncUnityGrid()
 		{
 			if (unityGrid == null) return;
@@ -82,14 +82,14 @@ namespace ShoelaceStudios.GridSystem.Core
 		private void ValidateRefs()
 		{
 			if (wallTilemap == null)
-				Debug.LogError($"[WorldGridManager] WallTilemap is not assigned on {gameObject.name}.", this);
+				Debug.LogError($"[WorldGridManager] WallTilemap not assigned on {gameObject.name}.", this);
 
 			if (gridWidth <= 0 || gridHeight <= 0 || cellSize <= 0f)
 				Debug.LogError($"[WorldGridManager] Invalid grid dimensions: width={gridWidth} height={gridHeight} cellSize={cellSize}", this);
 		}
 
 		#if UNITY_EDITOR
-		private void OnValidate() 
+		private void OnValidate()
 		{
 			UnityEditor.EditorApplication.delayCall += () =>
 			{
@@ -104,9 +104,8 @@ namespace ShoelaceStudios.GridSystem.Core
 		{
 			Grid.ForEachCell((x, y) =>
 			{
-				if (!IsBorderCell(x, y)) return;
-
-				AddWall(new Vector2Int(x, y), true);
+				if (IsBorderCell(x, y))
+					AddWall(new Vector2Int(x, y), paintTile: true);
 			});
 		}
 
@@ -114,12 +113,18 @@ namespace ShoelaceStudios.GridSystem.Core
 		{
 			if (wallTilemap == null) return;
 
+			List<Vector2Int> wallCells = new();
 			Grid.ForEachCell((x, y) =>
 			{
-				if (wallTilemap.HasTile(new Vector3Int(x, y, 0)))
-					AddWall(new Vector2Int(x, y));
+				Vector3 worldPos = Grid.GetWorldFromCell(x, y);
+				Vector3Int tilemapCell = wallTilemap.WorldToCell(worldPos);
+				if (wallTilemap.HasTile(tilemapCell))
+					wallCells.Add(new Vector2Int(x, y));
 			});
+			Grid.SetWalls(wallCells);
 		}
+
+		private bool IsBorderCell(int x, int y) => x == 0 || y == 0 || x == gridWidth - 1 || y == gridHeight - 1;
 
 
 		protected virtual void OnInitialized()
@@ -129,12 +134,14 @@ namespace ShoelaceStudios.GridSystem.Core
 		public virtual void Reset()
 		{
 			Grid = null;
+			WorldPartition = null;
 			IsInitialized = false;
+			layers.Clear();
 		}
 
 		#endregion
 
-		#region DataLayers
+		#region Data Layers
 
 		public DataGrid<T> AddDataLayer<T>(string layerName)
 		{
@@ -144,46 +151,26 @@ namespace ShoelaceStudios.GridSystem.Core
 				return null;
 			}
 
-			if (flatLayers.ContainsKey(layerName))
+			if (layers.TryGetValue(layerName, out IDataLayer layer))
 			{
 				Debug.LogWarning($"[WorldGridManager] Layer '{layerName}' already exists. Returning existing.");
-				return GetDataLayer<T>(layerName);
+				return layer as DataGrid<T>;
 			}
 
 			DataGrid<T> grid = new(gridWidth, gridHeight, layerName);
-			flatLayers[layerName] = grid;
+			layers[layerName] = grid;
 			return grid;
 		}
 
 		public DataGrid<T> GetDataLayer<T>(string layerName)
 		{
-			return flatLayers.TryGetValue(layerName, out IDataLayer layer)
+			return layers.TryGetValue(layerName, out IDataLayer layer)
 				? layer as DataGrid<T>
 				: null;
 		}
 
-
-		public bool HasDataLayer(string layerName)
-		{
-			return flatLayers.ContainsKey(layerName);
-		}
-
-		public bool HasSpatialDataLayer(string layerName)
-		{
-			return spatialLayers.ContainsKey(layerName);
-		}
-
-		public void RemoveDataLayer(string layerName)
-		{
-			if (!flatLayers.Remove(layerName))
-				Debug.LogWarning($"[WorldGridManager] Flat layer '{layerName}' not found.");
-		}
-
-		public void RemoveSpatialDataLayer(string layerName)
-		{
-			if (!spatialLayers.Remove(layerName))
-				Debug.LogWarning($"[WorldGridManager] Spatial layer '{layerName}' not found.");
-		}
+		public bool HasLayer(string layerName) => layers.ContainsKey(layerName);
+		public void RemoveLayer(string layerName) => layers.Remove(layerName);
 
 		#endregion
 
@@ -204,11 +191,6 @@ namespace ShoelaceStudios.GridSystem.Core
 			Grid.RemoveWall(cell);
 			if (clearTile && wallTilemap != null)
 				wallTilemap.SetTile(new Vector3Int(cell.x, cell.y, 0), null);
-		}
-
-		private bool IsBorderCell(int x, int y)
-		{
-			return x == 0 || y == 0 || x == gridWidth - 1 || y == gridHeight - 1;
 		}
 
 

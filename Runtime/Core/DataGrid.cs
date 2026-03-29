@@ -64,5 +64,11 @@ namespace ShoelaceStudios.GridSystem.Core
 			for (int y = 0; y < height; y++)
 				action(x, y);
 		}
+		public void ForEachCell(Action<int, int, T> action)
+		{
+			for (int x = 0; x < width; x++)
+			for (int y = 0; y < height; y++)
+				action(x, y, gridData[x, y]);
+		}
 	}
 }
