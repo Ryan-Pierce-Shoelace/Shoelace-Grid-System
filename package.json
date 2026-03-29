@@ -1,6 +1,6 @@
 {
   "name": "ca.shoelacestudios.gridsystem",
-  "version": "1.3.3",
+  "version": "2.0.0",
   "displayName": "Shoelace Grid System",
   "description": "Custom solution for managing data in 2D tilemaps. Agnostic and expandable",
   "unity": "2021.3",
