@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ShoelaceStudios.GridSystem.FloodFill;
 using ShoelaceStudios.GridSystem.Partition;
@@ -14,7 +15,7 @@ namespace ShoelaceStudios.GridSystem.Core
 		[SerializeField] private int gridHeight;
 		[SerializeField] private float cellSize = 1f;
 		[SerializeField] private bool buildPerimeterWall;
-
+		[SerializeField] private Grid unityGrid;
 		[Header("Tilemap")]
 		[SerializeField] private Tilemap wallTilemap;
 		[SerializeField] private TileBase wallTile;
@@ -40,6 +41,44 @@ namespace ShoelaceStudios.GridSystem.Core
 			ValidateRefs();
 		}
 
+		protected void Start()
+		{
+			Initialize();
+		}
+
+		public virtual void Initialize()
+		{
+			if (IsInitialized)
+			{
+				Debug.LogWarning("[WorldGridManager] Already initialized. Call Reset() first.");
+				return;
+			}
+
+			SyncUnityGrid();
+			Grid = new WorldGrid(gridWidth, gridHeight, cellSize, transform.position);
+			IsInitialized = true;
+
+			if (buildPerimeterWall) BuildPerimeterWalls();
+			PopulateWalls();
+			OnInitialized();
+		}
+
+		public void InitializeForEditor()
+		{
+			if (Grid != null) return;
+
+			SyncUnityGrid();
+			Grid = new WorldGrid(gridWidth, gridHeight, cellSize, transform.position);
+		}
+
+		private void SyncUnityGrid()
+		{
+			if (unityGrid == null) return;
+
+			unityGrid.cellSize = new Vector3(cellSize, cellSize, 0f);
+			unityGrid.transform.position = transform.position;
+		}
+
 		private void ValidateRefs()
 		{
 			if (wallTilemap == null)
@@ -48,6 +87,18 @@ namespace ShoelaceStudios.GridSystem.Core
 			if (gridWidth <= 0 || gridHeight <= 0 || cellSize <= 0f)
 				Debug.LogError($"[WorldGridManager] Invalid grid dimensions: width={gridWidth} height={gridHeight} cellSize={cellSize}", this);
 		}
+
+		#if UNITY_EDITOR
+		private void OnValidate() 
+		{
+			UnityEditor.EditorApplication.delayCall += () =>
+			{
+				if (this == null) return;
+
+				SyncUnityGrid();
+			};
+		}
+		#endif
 
 		protected virtual void BuildPerimeterWalls()
 		{
@@ -70,22 +121,6 @@ namespace ShoelaceStudios.GridSystem.Core
 			});
 		}
 
-		public virtual void Initialize()
-		{
-			if (IsInitialized)
-			{
-				Debug.LogWarning("[WorldGridManager] Already initialized. Call Reset() first.");
-				return;
-			}
-
-			Grid = new WorldGrid(gridWidth, gridHeight, cellSize, transform.position);
-
-			if (buildPerimeterWall) BuildPerimeterWalls();
-
-			PopulateWalls();
-			IsInitialized = true;
-			OnInitialized();
-		}
 
 		protected virtual void OnInitialized()
 		{
