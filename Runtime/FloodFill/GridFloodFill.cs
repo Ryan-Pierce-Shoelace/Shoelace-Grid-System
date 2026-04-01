@@ -25,7 +25,7 @@ namespace ShoelaceStudios.GridSystem
 			int tail = 0;
 			int count = 0;
 
-			Enqueue(context, start, 0, start, ref tail, ref count);
+			Enqueue(context, start, 0, ref tail, ref count);
 
 			while (head < tail)
 			{
@@ -41,10 +41,10 @@ namespace ShoelaceStudios.GridSystem
 					int nx = current.x + directions[d].x;
 					int ny = current.y + directions[d].y;
 
-					if (!CanVisit(grid, nx, ny, start, parameters, radiusSqr, context))
+					if (!CanVisit(grid, current.x, current.y, nx, ny, start, parameters, radiusSqr, context))
 						continue;
 
-					Enqueue(context, new Vector2Int(nx, ny), depth + 1, start, ref tail, ref count);
+					Enqueue(context, new Vector2Int(nx, ny), depth + 1, ref tail, ref count);
 				}
 			}
 
@@ -53,6 +53,8 @@ namespace ShoelaceStudios.GridSystem
 
 		private static bool CanVisit(
 			IWorldGrid grid,
+			int fromX,
+			int fromY,
 			int x,
 			int y,
 			Vector2Int origin,
@@ -61,9 +63,10 @@ namespace ShoelaceStudios.GridSystem
 			FloodFillContext context)
 		{
 			if (!grid.IsValidCell(x, y)) return false;
-			if (context.IsVisited(x, y, origin)) return false;
+			if (context.IsVisited(x, y)) return false;
 			if (parameters.StopAtWalls && grid.IsBlockedCell(x, y)) return false;
 			if (parameters.HasRegionMask && !parameters.RegionMask[y * grid.Width + x]) return false;
+			if (parameters.HasEdgeSystem && !parameters.EdgeSystem.CanCrossEdge(fromX, fromY, x, y)) return false;
 
 			if (parameters.HasRadiusLimit)
 			{
@@ -75,10 +78,14 @@ namespace ShoelaceStudios.GridSystem
 			return true;
 		}
 
-
-		private static void Enqueue(FloodFillContext context, Vector2Int cell, int depth, Vector2Int origin, ref int tail, ref int count)
+		private static void Enqueue(
+			FloodFillContext context,
+			Vector2Int cell,
+			int depth,
+			ref int tail,
+			ref int count)
 		{
-			context.MarkVisited(cell.x, cell.y, origin);
+			context.MarkVisited(cell.x, cell.y);
 			context.SetFrontier(tail++, cell, depth);
 			context.SetResult(count, cell);
 			context.SetResultDepth(count, depth);

@@ -15,21 +15,10 @@ namespace ShoelaceStudios.GridSystem
 		}
 
 		public Vector2Int this[int index] => context.GetResult(index);
+		public int GetDepth(int index) => !context.HasResultDepths ? 0 : context.GetResultDepth(index);
 
-		public bool Contains(int x, int y, Vector2Int origin)
-		{
-			return context.IsVisited(x, y, origin);
-		}
-
-		public bool Contains(Vector2Int cell, Vector2Int origin)
-		{
-			return Contains(cell.x, cell.y, origin);
-		}
-
-		public int GetDepth(int index)
-		{
-			return !context.HasResultDepths ? 0 : context.GetResultDepth(index);
-		}
+		public bool Contains(int x, int y) => context.IsVisited(x, y);
+		public bool Contains(Vector2Int cell) => Contains(cell.x, cell.y);
 
 		public int GetCellsAtDepth(int depth, Vector2Int[] buffer)
 		{

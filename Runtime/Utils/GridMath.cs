@@ -10,6 +10,9 @@ namespace ShoelaceStudios.GridSystem.Utils
 			return value >= 0 && value < max;
 		}
 
+
+		#region Distance
+
 		public static bool IsWithinCircularRadius(Vector2Int origin, Vector2Int candidate, int radius)
 		{
 			int dx = candidate.x - origin.x;
@@ -24,7 +27,6 @@ namespace ShoelaceStudios.GridSystem.Utils
 			return dx <= radius && dy <= radius;
 		}
 
-
 		public static bool IsWithinManhattanDistance(Vector2Int origin, Vector2Int candidate, int distance)
 		{
 			int dx = Mathf.Abs(candidate.x - origin.x);
@@ -32,11 +34,34 @@ namespace ShoelaceStudios.GridSystem.Utils
 			return dx + dy <= distance;
 		}
 
-
-		public static int DiamondSize(int r)
+		public static float GetWorldDistance(Vector2Int a, Vector2Int b, float cellSize)
 		{
-			return 2 * r * (r + 1) + 1;
+			int dx = b.x - a.x;
+			int dy = b.y - a.y;
+			return Mathf.Sqrt(dx * dx + dy * dy) * cellSize;
 		}
+
+		public static bool IsWithinWorldRadius(Vector2Int origin, Vector2Int candidate, float worldRadius, float cellSize)
+		{
+			int dx = candidate.x - origin.x;
+			int dy = candidate.y - origin.y;
+			float radiusInCells = worldRadius / cellSize;
+			return dx * dx + dy * dy <= radiusInCells * radiusInCells;
+		}
+
+		public static int ManhattanDistance(Vector2Int a, Vector2Int b)
+		{
+			return Mathf.Abs(b.x - a.x) + Mathf.Abs(b.y - a.y);
+		}
+
+		public static int KingDistance(Vector2Int a, Vector2Int b)
+		{
+			return Mathf.Max(Mathf.Abs(b.x - a.x), Mathf.Abs(b.y - a.y));
+		}
+
+		#endregion
+
+		#region Area
 
 		public static IEnumerable<Vector2Int> GetCellsInSquareArea(Vector2Int origin, int radius)
 		{
@@ -44,16 +69,8 @@ namespace ShoelaceStudios.GridSystem.Utils
 			for (int dy = -radius; dy <= radius; dy++)
 				yield return new Vector2Int(origin.x + dx, origin.y + dy);
 		}
-		//TODO as per the RedBlog article we can actually improve this a lot by passing in the grid dimensions
-		// Maybe even make a system that has to PASS in an arry to mutate? so you make an array or whatever in the los checker script and it is updated by this and checks those. That way we dont make a million lists 
-		// I think this will work if we create a array elsewhere and pass it in to be mutated so clear it send it in => it is updated => for each cell  and we return int count so that we can loop over only the results that exist
 
-		public static int GetCellsInSquareArea(
-			Vector2Int origin,
-			int radius,
-			int gridWidth,
-			int gridHeight,
-			Vector2Int[] results) //Maybe end in NoAlloc since we use an outside bugger
+		public static int GetCellsInSquareArea(Vector2Int origin, int radius, int gridWidth, int gridHeight, Vector2Int[] results)
 		{
 			int minX = Mathf.Max(0, origin.x - radius);
 			int maxX = Mathf.Min(gridWidth - 1, origin.x + radius);
@@ -68,6 +85,9 @@ namespace ShoelaceStudios.GridSystem.Utils
 			return count;
 		}
 
+		#endregion
+
+		#region Line
 
 		public static IEnumerable<Vector2Int> GetCellsOnLine(Vector2Int start, Vector2Int end)
 		{
@@ -100,5 +120,42 @@ namespace ShoelaceStudios.GridSystem.Utils
 				}
 			}
 		}
+
+		public static int GetCellsOnLine(Vector2Int start, Vector2Int end, Vector2Int[] results)
+		{
+			int x = start.x;
+			int y = start.y;
+			int dx = Mathf.Abs(end.x - x);
+			int dy = Mathf.Abs(end.y - y);
+			int stepX = x < end.x ? 1 : -1;
+			int stepY = y < end.y ? 1 : -1;
+			int error = dx - dy;
+			int count = 0;
+
+			while (true)
+			{
+				results[count++] = new Vector2Int(x, y);
+
+				if (x == end.x && y == end.y) break;
+
+				int doubleError = 2 * error;
+
+				if (doubleError > -dy)
+				{
+					error -= dy;
+					x += stepX;
+				}
+
+				if (doubleError < dx)
+				{
+					error += dx;
+					y += stepY;
+				}
+			}
+
+			return count;
+		}
+
+		#endregion
 	}
 }

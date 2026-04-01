@@ -8,6 +8,7 @@ namespace ShoelaceStudios.GridSystem
 		public readonly bool Diagonals;
 		public readonly bool TrackDepth;
 		public readonly bool[] RegionMask;
+		public readonly IEdgeSystem EdgeSystem;
 
 		public bool HasStepLimit => MaxSteps > 0;
 
@@ -15,7 +16,16 @@ namespace ShoelaceStudios.GridSystem
 
 		public bool HasRegionMask => RegionMask != null;
 
-		private FloodFillParams(int maxSteps, float maxRadius, bool stopAtWalls, bool diagonals, bool trackDepth, bool[] regionMask)
+		public bool HasEdgeSystem => EdgeSystem != null;
+
+		private FloodFillParams(
+			int maxSteps,
+			float maxRadius,
+			bool stopAtWalls,
+			bool diagonals,
+			bool trackDepth,
+			bool[] regionMask,
+			IEdgeSystem edgeSystem)
 		{
 			MaxSteps = maxSteps;
 			MaxRadius = maxRadius;
@@ -23,31 +33,38 @@ namespace ShoelaceStudios.GridSystem
 			Diagonals = diagonals;
 			TrackDepth = trackDepth;
 			RegionMask = regionMask;
+			EdgeSystem = edgeSystem;
 		}
 
-		public static FloodFillParams Unlimited(bool stopAtWalls = true, bool diagonals = false, bool trackDepth = false)
+		public static FloodFillParams Unlimited(bool stopAtWalls = true, bool diagonals = false, bool trackDepth = false, IEdgeSystem edgeSystem = null)
 		{
-			return new FloodFillParams(0, 0f, stopAtWalls, diagonals, trackDepth, null);
+			return new FloodFillParams(0, 0f, stopAtWalls, diagonals, trackDepth, null, edgeSystem);
 		}
 
-		public static FloodFillParams WithSteps(int steps, bool stopAtWalls = true, bool diagonals = false, bool trackDepth = false)
+		public static FloodFillParams WithSteps(int steps, bool stopAtWalls = true, bool diagonals = false, bool trackDepth = false, IEdgeSystem edgeSystem = null)
 		{
-			return new FloodFillParams(steps, 0f, stopAtWalls, diagonals, trackDepth, null);
+			return new FloodFillParams(steps, 0f, stopAtWalls, diagonals, trackDepth, null, edgeSystem);
 		}
 
-		public static FloodFillParams WithRadius(float radius, bool stopAtWalls = true, bool diagonals = false, bool trackDepth = false)
+		public static FloodFillParams WithRadius(float radius, bool stopAtWalls = true, bool diagonals = false, bool trackDepth = false, IEdgeSystem edgeSystem = null)
 		{
-			return new FloodFillParams(0, radius, stopAtWalls, diagonals, trackDepth, null);
+			return new FloodFillParams(0, radius, stopAtWalls, diagonals, trackDepth, null, edgeSystem);
 		}
 
-		public static FloodFillParams WithStepsAndRadius(int steps, float radius, bool stopAtWalls = true, bool diagonals = false, bool trackDepth = false)
+		public static FloodFillParams WithStepsAndRadius(
+			int steps,
+			float radius,
+			bool stopAtWalls = true,
+			bool diagonals = false,
+			bool trackDepth = false,
+			IEdgeSystem edgeSystem = null)
 		{
-			return new FloodFillParams(steps, radius, stopAtWalls, diagonals, trackDepth, null);
+			return new FloodFillParams(steps, radius, stopAtWalls, diagonals, trackDepth, null, edgeSystem);
 		}
 
-		public static FloodFillParams WithRegionMask(bool[] mask, bool stopAtWalls = true, bool diagonals = false, bool trackDepth = false)
+		public static FloodFillParams WithRegionMask(bool[] mask, bool stopAtWalls = true, bool diagonals = false, bool trackDepth = false, IEdgeSystem edgeSystem = null)
 		{
-			return new FloodFillParams(0, 0f, stopAtWalls, diagonals, trackDepth, mask);
+			return new FloodFillParams(0, 0f, stopAtWalls, diagonals, trackDepth, mask, edgeSystem);
 		}
 	}
 }
