@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using ShoelaceStudios.GridSystem.Partition;
 using UnityEngine;
 
 namespace ShoelaceStudios.GridSystem.Visibility

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using ShoelaceStudios.GridSystem.Visibility;
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Partition
+namespace ShoelaceStudios.GridSystem
 {
 	public class WorldPartition : AbstractPartition<WorldChunk>
 	{
@@ -20,11 +20,7 @@ namespace ShoelaceStudios.GridSystem.Partition
 
 		#region Visibility
 
-		public void UpdateVisibility(
-			ChunkVisibilityTracker tracker,
-			Camera cam,
-			Action<WorldChunk> onBecameVisible = null,
-			Action<WorldChunk> onBecameInvisible = null)
+		public void UpdateVisibility(ChunkVisibilityTracker tracker, Camera cam, Action<WorldChunk> onBecameVisible = null, Action<WorldChunk> onBecameInvisible = null)
 		{
 			foreach (WorldChunk chunk in chunks.Values)
 			{

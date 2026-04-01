@@ -1,101 +1,88 @@
-using System.Collections.Generic;
 using ShoelaceStudios.GridSystem.Utils;
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.FloodFill
+namespace ShoelaceStudios.GridSystem
 {
 	public static class GridFloodFill
 	{
-		public static HashSet<Vector2Int> Execute(
+		public static FloodFillResult Execute(
 			IWorldGrid grid,
 			Vector2Int start,
 			FloodFillParams parameters,
-			ICollection<Vector2Int> regionConstraint = null)
+			FloodFillContext context)
 		{
-			if (!grid.IsValidCell(start.x, start.y)) return new HashSet<Vector2Int>();
-			if (regionConstraint != null && !regionConstraint.Contains(start)) return new HashSet<Vector2Int>();
+			context.Reset();
 
-			HashSet<Vector2Int> visited = new();
-			Queue<FloodFillState> frontier = new();
+			if (!grid.IsValidCell(start.x, start.y))
+				return new FloodFillResult(context, 0);
 
-			visited.Add(start);
-			frontier.Enqueue(new FloodFillState(start, 0));
+			Vector2Int[] directions = parameters.Diagonals
+				? GridDirections.All8
+				: GridDirections.Cardinal;
 
 			float radiusSqr = parameters.MaxRadius * parameters.MaxRadius;
-			Vector3 startWorld = parameters.HasRadiusLimit ? grid.GetWorldFromCell(start.x, start.y) : Vector3.zero;
+			int head = 0;
+			int tail = 0;
+			int count = 0;
 
-			while (frontier.Count > 0)
+			Enqueue(context, start, 0, start, ref tail, ref count);
+
+			while (head < tail)
 			{
-				FloodFillState current = frontier.Dequeue();
+				Vector2Int current = context.GetFrontier(head);
+				int depth = context.GetFrontierDepth(head);
+				head++;
 
-				if (IsAtLimit(grid, current, parameters, startWorld, radiusSqr))
+				if (parameters.HasStepLimit && depth >= parameters.MaxSteps)
 					continue;
 
-				foreach (Vector2Int dir in GridDirections.Cardinal)
+				for (int d = 0; d < directions.Length; d++)
 				{
-					Vector2Int neighbor = current.Cell + dir;
+					int nx = current.x + directions[d].x;
+					int ny = current.y + directions[d].y;
 
-					if (!CanExpand(grid, neighbor, visited, parameters, regionConstraint))
+					if (!CanVisit(grid, nx, ny, start, parameters, radiusSqr, context))
 						continue;
 
-					visited.Add(neighbor);
-					frontier.Enqueue(new FloodFillState(neighbor, current.Depth + 1));
+					Enqueue(context, new Vector2Int(nx, ny), depth + 1, start, ref tail, ref count);
 				}
 			}
 
-			return visited;
+			return new FloodFillResult(context, count);
 		}
 
-
-		#region private helpers
-
-		private static bool IsAtLimit(
+		private static bool CanVisit(
 			IWorldGrid grid,
-			FloodFillState state,
+			int x,
+			int y,
+			Vector2Int origin,
 			FloodFillParams parameters,
-			Vector3 startWorld,
-			float radiusSqr)
+			float radiusSqr,
+			FloodFillContext context)
 		{
-			if (parameters.HasStepLimit && state.Depth >= parameters.MaxSteps)
-				return true;
+			if (!grid.IsValidCell(x, y)) return false;
+			if (context.IsVisited(x, y, origin)) return false;
+			if (parameters.StopAtWalls && grid.IsBlockedCell(x, y)) return false;
+			if (parameters.HasRegionMask && !parameters.RegionMask[y * grid.Width + x]) return false;
 
 			if (parameters.HasRadiusLimit)
 			{
-				Vector3 worldPos = grid.GetWorldFromCell(state.Cell.x, state.Cell.y);
-				return (worldPos - startWorld).sqrMagnitude > radiusSqr;
+				int dx = x - origin.x;
+				int dy = y - origin.y;
+				return dx * dx + dy * dy <= radiusSqr;
 			}
-
-			return false;
-		}
-
-		private static bool CanExpand(
-			IWorldGrid grid,
-			Vector2Int cell,
-			HashSet<Vector2Int> visited,
-			FloodFillParams parameters,
-			ICollection<Vector2Int> regionConstraint)
-		{
-			if (!grid.IsValidCell(cell.x, cell.y)) return false;
-			if (visited.Contains(cell)) return false;
-			if (parameters.StopAtWalls && grid.IsWallCell(cell.x, cell.y)) return false;
-			if (regionConstraint != null && !regionConstraint.Contains(cell)) return false;
 
 			return true;
 		}
 
 
-		private struct FloodFillState
+		private static void Enqueue(FloodFillContext context, Vector2Int cell, int depth, Vector2Int origin, ref int tail, ref int count)
 		{
-			public readonly Vector2Int Cell;
-			public readonly int Depth;
-
-			public FloodFillState(Vector2Int cell, int depth)
-			{
-				Cell = cell;
-				Depth = depth;
-			}
+			context.MarkVisited(cell.x, cell.y, origin);
+			context.SetFrontier(tail++, cell, depth);
+			context.SetResult(count, cell);
+			context.SetResultDepth(count, depth);
+			count++;
 		}
-
-		#endregion
 	}
 }

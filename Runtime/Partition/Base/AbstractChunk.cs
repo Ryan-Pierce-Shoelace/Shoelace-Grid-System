@@ -1,7 +1,7 @@
 using System;
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Partition
+namespace ShoelaceStudios.GridSystem
 {
 	public abstract class AbstractChunk
 	{

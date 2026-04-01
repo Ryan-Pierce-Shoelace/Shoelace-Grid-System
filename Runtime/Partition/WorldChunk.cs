@@ -1,10 +1,7 @@
 using System;
-using System.Collections.Generic;
-using ShoelaceStudios.GridSystem.FloodFill;
-using ShoelaceStudios.GridSystem.Utils;
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Partition
+namespace ShoelaceStudios.GridSystem
 {
 	public class WorldChunk : AbstractChunk
 	{
@@ -49,15 +46,21 @@ namespace ShoelaceStudios.GridSystem.Partition
 			return false;
 		}
 
-		public HashSet<Vector2Int> FloodFill(Vector2Int start, FloodFillParams parameters)
+		public FloodFillResult FloodFill(Vector2Int start, FloodFillParams parameters, FloodFillContext context)
 		{
-			HashSet<Vector2Int> region = new();
-			ForEachCell((x, y) =>
-			{
+			bool[] mask = BuildChunkMask();
+			FloodFillParams masked = FloodFillParams.WithRegionMask(mask, parameters.StopAtWalls, parameters.Diagonals, parameters.TrackDepth);
+			return GridFloodFill.Execute(world, start, masked, context);
+		}
+
+		private bool[] BuildChunkMask()
+		{
+			bool[] mask = new bool[world.Width * world.Height];
+			for (int x = MinX; x <= MaxX; x++)
+			for (int y = MinY; y <= MaxY; y++)
 				if (world.IsValidCell(x, y))
-					region.Add(new Vector2Int(x, y));
-			});
-			return GridFloodFill.Execute(world, start, parameters, region);
+					mask[y * world.Width + x] = true;
+			return mask;
 		}
 	}
 }

@@ -1,12 +1,9 @@
-using System;
 using System.Collections.Generic;
-using ShoelaceStudios.GridSystem.FloodFill;
-using ShoelaceStudios.GridSystem.Partition;
 using ShoelaceStudios.Utilities.Singleton;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-namespace ShoelaceStudios.GridSystem.Core
+namespace ShoelaceStudios.GridSystem.Core	
 {
 	public class WorldGridManager : Singleton<WorldGridManager>
 	{
@@ -29,6 +26,7 @@ namespace ShoelaceStudios.GridSystem.Core
 		[SerializeField] private Color selectedGridColor = new(1f, 1f, 0f);
 		public float CellSize => cellSize;
 		public IWorldGrid Grid { get; private set; }
+		public IEdgeSystem EdgeSystem { get; private set; }
 		public WorldPartition WorldPartition { get; private set; }
 		public bool IsInitialized { get; private set; }
 
@@ -43,6 +41,10 @@ namespace ShoelaceStudios.GridSystem.Core
 			Initialize();
 		}
 
+		public void RegisterEdgeSystem(IEdgeSystem edgeSystem)
+		{
+			EdgeSystem = edgeSystem;
+		}
 
 		public virtual void Initialize()
 		{
@@ -105,7 +107,7 @@ namespace ShoelaceStudios.GridSystem.Core
 			Grid.ForEachCell((x, y) =>
 			{
 				if (IsBorderCell(x, y))
-					AddWall(new Vector2Int(x, y), paintTile: true);
+					AddWall(new Vector2Int(x, y), true);
 			});
 		}
 
@@ -124,7 +126,10 @@ namespace ShoelaceStudios.GridSystem.Core
 			Grid.SetWalls(wallCells);
 		}
 
-		private bool IsBorderCell(int x, int y) => x == 0 || y == 0 || x == gridWidth - 1 || y == gridHeight - 1;
+		private bool IsBorderCell(int x, int y)
+		{
+			return x == 0 || y == 0 || x == gridWidth - 1 || y == gridHeight - 1;
+		}
 
 
 		protected virtual void OnInitialized()
@@ -169,8 +174,15 @@ namespace ShoelaceStudios.GridSystem.Core
 				: null;
 		}
 
-		public bool HasLayer(string layerName) => layers.ContainsKey(layerName);
-		public void RemoveLayer(string layerName) => layers.Remove(layerName);
+		public bool HasLayer(string layerName)
+		{
+			return layers.ContainsKey(layerName);
+		}
+
+		public void RemoveLayer(string layerName)
+		{
+			layers.Remove(layerName);
+		}
 
 		#endregion
 
@@ -198,7 +210,7 @@ namespace ShoelaceStudios.GridSystem.Core
 
 		public bool IsWallCell(int x, int y)
 		{
-			return Grid.IsWallCell(x, y);
+			return Grid.IsBlockedCell(x, y);
 		}
 
 		public bool IsWallCell(Vector2Int cell)
@@ -235,14 +247,9 @@ namespace ShoelaceStudios.GridSystem.Core
 
 		#region Public API - Flood Fill
 
-		public HashSet<Vector2Int> FloodFill(Vector2Int start, FloodFillParams parameters)
+		public FloodFillResult FloodFill(Vector2Int start, FloodFillParams parameters, FloodFillContext context)
 		{
-			return GridFloodFill.Execute(Grid, start, parameters);
-		}
-
-		public HashSet<Vector2Int> FloodFillInRegion(Vector2Int start, FloodFillParams parameters, ICollection<Vector2Int> allowedRegion)
-		{
-			return !allowedRegion.Contains(start) ? new HashSet<Vector2Int>() : GridFloodFill.Execute(Grid, start, parameters, allowedRegion);
+			return GridFloodFill.Execute(Grid, start, parameters, context);
 		}
 
 		#endregion

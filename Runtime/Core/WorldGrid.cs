@@ -8,9 +8,13 @@ namespace ShoelaceStudios.GridSystem.Core
 	public class WorldGrid : IWorldGrid
 	{
 		public int Width => width;
+
 		public int Height => height;
+
 		public float CellSize => cellSize;
+
 		public Vector3 Origin => gridOrigin;
+
 		public Bounds WorldBounds => worldBounds;
 
 		private readonly int width;
@@ -19,8 +23,10 @@ namespace ShoelaceStudios.GridSystem.Core
 		private readonly Vector3 gridOrigin;
 		private readonly Vector3 cellCenterOffset;
 		private readonly Bounds worldBounds;
-		private readonly HashSet<Vector2Int> walls = new();
 
+		private readonly CellFlags[] cellFlags;
+
+		private int FlagIndex(int x, int y) => y * width + x;
 
 		public WorldGrid(int gridWidth, int gridHeight, float cellSize, Vector3 origin)
 		{
@@ -35,6 +41,7 @@ namespace ShoelaceStudios.GridSystem.Core
 			worldBounds = new Bounds(
 				origin + cellCenterOffset + new Vector3((width - 1) * cellSize * 0.5f, (height - 1) * cellSize * 0.5f, 0f),
 				new Vector3(width * cellSize, height * cellSize, 1f));
+			cellFlags = new CellFlags[width * height];
 		}
 
 
@@ -97,6 +104,7 @@ namespace ShoelaceStudios.GridSystem.Core
 			return result;
 		}
 
+		//TODO move to grid direction so we can support  the edge system. Also probably create non Alloc versions as well that way LOS or pathing can just use one array
 		public List<Vector2Int> GetNeighbors4(Vector2Int cell)
 		{
 			List<Vector2Int> result = new(4);
@@ -180,6 +188,128 @@ namespace ShoelaceStudios.GridSystem.Core
 
 		#endregion
 
+		#region Cell Flags
+
+		public CellFlags GetFlags(int x, int y)
+		{
+			return cellFlags[FlagIndex(x, y)];
+		}
+
+		public CellFlags GetFlags(Vector2Int cell)
+		{
+			return GetFlags(cell.x, cell.y);
+		}
+
+		public bool HasFlag(int x, int y, CellFlags flag)
+		{
+			return (cellFlags[FlagIndex(x, y)] & flag) != CellFlags.None;
+		}
+
+		public bool HasFlag(Vector2Int cell, CellFlags flag)
+		{
+			return HasFlag(cell.x, cell.y, flag);
+		}
+
+		public void SetFlag(int x, int y, CellFlags flag)
+		{
+			cellFlags[FlagIndex(x, y)] |= flag;
+		}
+
+		public void SetFlag(Vector2Int cell, CellFlags flag)
+		{
+			SetFlag(cell.x, cell.y, flag);
+		}
+
+		public void ClearFlag(int x, int y, CellFlags flag)
+		{
+			byte inverseMask = (byte)~(byte)flag;
+			cellFlags[FlagIndex(x, y)] &= (CellFlags)inverseMask;
+		}
+
+		public void ClearFlag(Vector2Int cell, CellFlags flag)
+		{
+			ClearFlag(cell.x, cell.y, flag);
+		}
+
+		public void ClearAllOfFlag(CellFlags flag)
+		{
+			byte inverseMask = (byte)~(byte)flag;
+			for (int i = 0; i < cellFlags.Length; i++)
+				cellFlags[i] &= (CellFlags)inverseMask;
+		}
+
+		public void ClearAllFlags()
+		{
+			Array.Clear(cellFlags, 0, cellFlags.Length);
+		}
+
+		#endregion
+
+		#region Walls and Pathing
+
+		public bool IsBlockedCell(int x, int y)
+		{
+			return HasFlag(x, y, CellFlags.Blocked);
+		}
+
+		public bool IsBlockedCell(Vector2Int cell)
+		{
+			return IsBlockedCell(cell.x, cell.y);
+		}
+
+		public bool IsSlowCell(int x, int y)
+		{
+			return HasFlag(x, y, CellFlags.Slow);
+		}
+
+		public bool IsSlowCell(Vector2Int cell)
+		{
+			return IsSlowCell(cell.x, cell.y);
+		}
+
+		public bool IsWalkable(int x, int y)
+		{
+			return IsValidCell(x, y) && !IsBlockedCell(x, y);
+		}
+
+		public bool IsWalkable(Vector2Int cell)
+		{
+			return IsWalkable(cell.x, cell.y);
+		}
+
+		public void AddWall(Vector2Int cell)
+		{
+			SetFlag(cell, CellFlags.Blocked);
+		}
+
+		public void RemoveWall(Vector2Int cell)
+		{
+			ClearFlag(cell, CellFlags.Blocked);
+		}
+
+		public void ClearWalls()
+		{
+			ClearAllOfFlag(CellFlags.Blocked);
+		}
+
+		public void SetWalls(IEnumerable<Vector2Int> wallCells)
+		{
+			ClearAllOfFlag(CellFlags.Blocked);
+			foreach (Vector2Int cell in wallCells)
+				if (IsValidCell(cell))
+					SetFlag(cell, CellFlags.Blocked);
+		}
+
+		public int GetAllWalls(Vector2Int[] buffer)
+		{
+			int count = 0;
+			for (int i = 0; i < cellFlags.Length; i++)
+				if ((cellFlags[i] & CellFlags.Blocked) != CellFlags.None)
+					buffer[count++] = new Vector2Int(i % width, i / width);
+			return count;
+		}
+
+		#endregion
 
 		#region Validation
 
@@ -192,58 +322,6 @@ namespace ShoelaceStudios.GridSystem.Core
 		public bool IsValidCell(Vector2Int cell)
 		{
 			return IsValidCell(cell.x, cell.y);
-		}
-
-		#endregion
-
-		#region Walls and Pathing
-
-		public bool IsWallCell(int x, int y)
-		{
-			return walls.Contains(new Vector2Int(x, y));
-		}
-
-		public bool IsWallCell(Vector2Int cell)
-		{
-			return walls.Contains(cell);
-		}
-
-		public bool IsWalkable(int x, int y)
-		{
-			return IsValidCell(x, y) && !IsWallCell(x, y);
-		}
-
-		public bool IsWalkable(Vector2Int cell)
-		{
-			return IsWalkable(cell.x, cell.y);
-		}
-
-		public void AddWall(Vector2Int cell)
-		{
-			walls.Add(cell);
-		}
-
-		public void RemoveWall(Vector2Int cell)
-		{
-			walls.Remove(cell);
-		}
-
-		public void ClearWalls()
-		{
-			walls.Clear();
-		}
-
-		public void SetWalls(IEnumerable<Vector2Int> wallCells)
-		{
-			walls.Clear();
-			foreach (Vector2Int cell in wallCells)
-				if (IsValidCell(cell))
-					walls.Add(cell);
-		}
-
-		public IEnumerable<Vector2Int> GetAllWalls()
-		{
-			return walls;
 		}
 
 		#endregion

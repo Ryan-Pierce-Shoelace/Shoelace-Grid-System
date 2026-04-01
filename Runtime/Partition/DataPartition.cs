@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Partition
+namespace ShoelaceStudios.GridSystem
 {
 	public class DataPartition<T> : AbstractPartition<DataChunk<T>>
 	{

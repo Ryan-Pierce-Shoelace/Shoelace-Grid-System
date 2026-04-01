@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace ShoelaceStudios.GridSystem.Partition
+namespace ShoelaceStudios.GridSystem
 {
 	public abstract class AbstractPartition<TChunk> where TChunk : AbstractChunk
 	{
