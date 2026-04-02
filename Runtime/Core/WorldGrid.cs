@@ -8,13 +8,9 @@ namespace ShoelaceStudios.GridSystem.Core
 	public class WorldGrid : IWorldGrid
 	{
 		public int Width => width;
-
 		public int Height => height;
-
 		public float CellSize => cellSize;
-
 		public Vector3 Origin => gridOrigin;
-
 		public Bounds WorldBounds => worldBounds;
 
 		private readonly int width;
@@ -30,20 +26,17 @@ namespace ShoelaceStudios.GridSystem.Core
 
 		public WorldGrid(int gridWidth, int gridHeight, float cellSize, Vector3 origin)
 		{
-			if (gridWidth <= 0 || gridHeight <= 0 || cellSize <= 0f)
-				throw new ArgumentException($"Invalid WorldGrid: width={gridWidth} height={gridHeight} cellSize={cellSize}");
+			if (gridWidth <= 0 || gridHeight <= 0 || cellSize <= 0f) throw new ArgumentException($"Invalid WorldGrid: width={gridWidth} height={gridHeight} cellSize={cellSize}");
 
 			width = gridWidth;
 			height = gridHeight;
 			this.cellSize = cellSize;
 			gridOrigin = origin;
 			cellCenterOffset = new Vector3(cellSize * 0.5f, cellSize * 0.5f, 0f);
-			worldBounds = new Bounds(
-				origin + cellCenterOffset + new Vector3((width - 1) * cellSize * 0.5f, (height - 1) * cellSize * 0.5f, 0f),
-				new Vector3(width * cellSize, height * cellSize, 1f));
+			Vector3 boundsCenter = origin + cellCenterOffset + new Vector3((width - 1) * cellSize * 0.5f, (height - 1) * cellSize * 0.5f, 0f);
+			worldBounds = new Bounds(boundsCenter, new Vector3(width * cellSize, height * cellSize, 1f));
 			cellFlags = new CellFlags[width * height];
 		}
-
 
 		#region Coordinate Conversions
 
@@ -104,8 +97,7 @@ namespace ShoelaceStudios.GridSystem.Core
 			return result;
 		}
 
-		//TODO move to grid direction so we can support  the edge system. Also probably create non Alloc versions as well that way LOS or pathing can just use one array
-		public List<Vector2Int> GetNeighbors4(Vector2Int cell)
+		public List<Vector2Int> GetNeighbors4(Vector2Int cell) //TODO still move to static maybe instead
 		{
 			List<Vector2Int> result = new(4);
 			foreach (Vector2Int dir in GridDirections.Cardinal)

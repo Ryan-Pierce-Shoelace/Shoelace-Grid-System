@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using ShoelaceStudios.GridSystem.Core;
 using UnityEngine;
 
 namespace ShoelaceStudios.GridSystem
@@ -33,6 +34,25 @@ namespace ShoelaceStudios.GridSystem
 		void SetWalls(IEnumerable<Vector2Int> wallCells);
 		void ClearWalls();
 		int GetAllWalls(Vector2Int[] buffer);
+
+		#endregion
+
+		#region Cell Flags
+
+		CellFlags GetFlags(int x, int y);
+		CellFlags GetFlags(Vector2Int cell);
+
+		bool HasFlag(int x, int y, CellFlags flag);
+		bool HasFlag(Vector2Int cell, CellFlags flag);
+
+		void SetFlag(int x, int y, CellFlags flag);
+		void SetFlag(Vector2Int cell, CellFlags flag);
+
+		void ClearFlag(int x, int y, CellFlags flag);
+		void ClearFlag(Vector2Int cell, CellFlags flag);
+
+		void ClearAllOfFlag(CellFlags flag);
+		void ClearAllFlags();
 
 		#endregion
 

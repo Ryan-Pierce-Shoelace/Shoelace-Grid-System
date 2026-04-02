@@ -1,9 +1,11 @@
 using System.Collections.Generic;
+using ShoelaceStudios.GridSystem.Edges;
 using ShoelaceStudios.Utilities.Singleton;
+using UnityEditor.Graphs;
 using UnityEngine;
 using UnityEngine.Tilemaps;
 
-namespace ShoelaceStudios.GridSystem.Core	
+namespace ShoelaceStudios.GridSystem.Core
 {
 	public class WorldGridManager : Singleton<WorldGridManager>
 	{
@@ -41,10 +43,6 @@ namespace ShoelaceStudios.GridSystem.Core
 			Initialize();
 		}
 
-		public void RegisterEdgeSystem(IEdgeSystem edgeSystem)
-		{
-			EdgeSystem = edgeSystem;
-		}
 
 		public virtual void Initialize()
 		{
@@ -59,9 +57,20 @@ namespace ShoelaceStudios.GridSystem.Core
 			WorldPartition = new WorldPartition(Grid, partitionChunkSize);
 			IsInitialized = true;
 
+			TryInitializeEdgeManager();
+
 			if (buildPerimeterWall) BuildPerimeterWalls();
 			PopulateWalls();
 			OnInitialized();
+		}
+
+		private void TryInitializeEdgeManager()
+		{
+			EdgeManager edgeManager = GetComponent<EdgeManager>();
+			if (edgeManager == null) return;
+
+			edgeManager.Initialize(Grid);
+			EdgeSystem = edgeManager;
 		}
 
 		public void InitializeForEditor()
@@ -141,6 +150,7 @@ namespace ShoelaceStudios.GridSystem.Core
 			Grid = null;
 			WorldPartition = null;
 			IsInitialized = false;
+			EdgeSystem = null;
 			layers.Clear();
 		}
 

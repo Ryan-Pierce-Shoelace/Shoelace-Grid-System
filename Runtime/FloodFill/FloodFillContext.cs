@@ -64,7 +64,6 @@ namespace ShoelaceStudios.GridSystem
 			return resultDepths[index];
 		}
 
-
 		public void SetFrontier(int index, Vector2Int cell, int depth)
 		{
 			frontier[index] = cell;

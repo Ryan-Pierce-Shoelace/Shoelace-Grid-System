@@ -11,15 +11,12 @@ namespace ShoelaceStudios.GridSystem
 
 		bool HasEdgeFlag(int x, int y, EdgeDirection direction, EdgeFlags flag);
 		bool HasEdgeFlag(Vector2Int cell, EdgeDirection direction, EdgeFlags flag);
-		bool HasEdgeFlag(Vector2Int from, Vector2Int to, EdgeFlags flag);
 
 		void SetEdgeFlag(int x, int y, EdgeDirection direction, EdgeFlags flag);
 		void SetEdgeFlag(Vector2Int cell, EdgeDirection direction, EdgeFlags flag);
-		void SetEdgeFlag(Vector2Int from, Vector2Int to, EdgeFlags flag);
 
 		void ClearEdgeFlag(int x, int y, EdgeDirection direction, EdgeFlags flag);
 		void ClearEdgeFlag(Vector2Int cell, EdgeDirection direction, EdgeFlags flag);
-		void ClearEdgeFlag(Vector2Int from, Vector2Int to, EdgeFlags flag);
 
 		void ClearAllEdges();
 		void ClearAllEdgesOfFlag(EdgeFlags flag);

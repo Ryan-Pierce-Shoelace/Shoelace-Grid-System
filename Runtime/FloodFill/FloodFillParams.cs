@@ -11,21 +11,11 @@ namespace ShoelaceStudios.GridSystem
 		public readonly IEdgeSystem EdgeSystem;
 
 		public bool HasStepLimit => MaxSteps > 0;
-
 		public bool HasRadiusLimit => MaxRadius > 0f;
-
 		public bool HasRegionMask => RegionMask != null;
-
 		public bool HasEdgeSystem => EdgeSystem != null;
 
-		private FloodFillParams(
-			int maxSteps,
-			float maxRadius,
-			bool stopAtWalls,
-			bool diagonals,
-			bool trackDepth,
-			bool[] regionMask,
-			IEdgeSystem edgeSystem)
+		private FloodFillParams(int maxSteps, float maxRadius, bool stopAtWalls, bool diagonals, bool trackDepth, bool[] regionMask, IEdgeSystem edgeSystem)
 		{
 			MaxSteps = maxSteps;
 			MaxRadius = maxRadius;
