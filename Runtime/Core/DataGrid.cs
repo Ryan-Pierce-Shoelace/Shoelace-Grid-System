@@ -22,7 +22,7 @@ namespace ShoelaceStudios.GridSystem.Core
 			LayerName = name;
 			gridData = new T[width, height];
 		}
-		
+
 		public T GetValue(int x, int y)
 		{
 			return IsValid(x, y) ? gridData[x, y] : throw new ArgumentOutOfRangeException($"Cell ({x},{y}) out of bounds ({width}x{height}).");
@@ -36,6 +36,7 @@ namespace ShoelaceStudios.GridSystem.Core
 		public void SetValue(int x, int y, T value)
 		{
 			if (!IsValid(x, y)) throw new ArgumentOutOfRangeException($"Cell ({x},{y}) out of bounds ({width}x{height}).");
+
 			gridData[x, y] = value;
 		}
 
@@ -53,7 +54,7 @@ namespace ShoelaceStudios.GridSystem.Core
 		{
 			return GridMath.ValidateDimension(x, width) && GridMath.ValidateDimension(y, height);
 		}
-		
+
 		public void ForEachCell(Action<int, int> action)
 		{
 			for (int x = 0; x < width; x++)

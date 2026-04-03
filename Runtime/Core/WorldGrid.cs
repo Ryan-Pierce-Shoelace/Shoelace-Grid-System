@@ -22,7 +22,10 @@ namespace ShoelaceStudios.GridSystem.Core
 
 		private readonly CellFlags[] cellFlags;
 
-		private int FlagIndex(int x, int y) => y * width + x;
+		private int FlagIndex(int x, int y)
+		{
+			return y * width + x;
+		}
 
 		public WorldGrid(int gridWidth, int gridHeight, float cellSize, Vector3 origin)
 		{

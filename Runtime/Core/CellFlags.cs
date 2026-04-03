@@ -7,6 +7,6 @@ namespace ShoelaceStudios.GridSystem.Core
 	{
 		None = 0,
 		Blocked = 1 << 0,
-		Slow = 1 << 1,
+		Slow = 1 << 1
 	}
 }
