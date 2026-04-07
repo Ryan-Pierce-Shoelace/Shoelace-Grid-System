@@ -78,6 +78,15 @@ namespace ShoelaceStudios.GridSystem.Core
 
 			SyncUnityGrid();
 			Grid = new WorldGrid(gridWidth, gridHeight, cellSize, transform.position);
+			
+			WorldPartition = new WorldPartition(Grid, partitionChunkSize);
+			IsInitialized = true;
+
+			TryInitializeEdgeManager();
+
+			if (buildPerimeterWall) BuildPerimeterWalls();
+			PopulateWalls();
+			OnInitialized();
 		}
 
 
@@ -217,6 +226,20 @@ namespace ShoelaceStudios.GridSystem.Core
 
 		#region Public API - helpers
 
+		public bool IsValidCell(Vector2Int cell)
+		{
+			return IsValidCell(cell.x, cell.y);
+		}
+
+		public bool IsValidCell(int x, int y)
+		{
+			return Grid.IsValidCell(x, y);
+		}
+		
+		public Vector2 GetGridWorldSize()
+		{
+			return new Vector2(gridWidth * cellSize, gridHeight * cellSize);
+		}
 		public bool IsWallCell(int x, int y)
 		{
 			return Grid.IsBlockedCell(x, y);
@@ -296,5 +319,6 @@ namespace ShoelaceStudios.GridSystem.Core
 			}
 		}
 		#endif
+		
 	}
 }
