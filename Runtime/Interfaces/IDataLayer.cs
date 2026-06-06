@@ -1,8 +1,8 @@
 namespace ShoelaceStudios.GridSystem
 {
-	public interface IDataLayer
-	{
-		string LayerName { get; }
-		void Clear();
-	}
+    public interface IDataLayer
+    {
+        string LayerName { get; }
+        void Clear();
+    }
 }
